@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daftar Antrian — PST BPS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #1a56db;
+    --primary-dark: #1342af;
+    --secondary: #0ea5e9;
+    --accent: #f59e0b;
+    --success: #10b981;
+    --danger: #ef4444;
+    --bg: #f0f4ff;
+    --surface: #ffffff;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --radius: 16px;
+    --shadow: 0 4px 24px rgba(26,86,219,0.10);
+  }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #1a56db 0%, #0ea5e9 50%, #06b6d4 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  .card {
+    background: var(--surface);
+    border-radius: 24px;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 560px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    animation: slideUp 0.4s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .logo-wrap {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, #1a56db, #0ea5e9);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 32px;
+    box-shadow: 0 8px 20px rgba(26,86,219,0.3);
+  }
+
+  .header h1 {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    margin-bottom: 4px;
+  }
+  .header p { font-size: 13px; color: var(--text-muted); }
+
+  .form-group { margin-bottom: 20px; }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  label {
+    display: block; font-size: 13px; font-weight: 600;
+    color: var(--text); margin-bottom: 6px;
+  }
+  label span.req { color: var(--danger); }
+  label span.opt { color: var(--text-muted); font-weight: 400; }
+
+  input[type="text"], input[type="email"], input[type="tel"], input[type="number"], select, textarea {
+    width: 100%; padding: 12px 16px;
+    border: 2px solid var(--border); border-radius: 10px;
+    font-size: 15px; font-family: 'Inter', sans-serif;
+    color: var(--text); background: var(--bg);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(26,86,219,0.12);
+    background: #fff;
+  }
+  textarea { resize: vertical; min-height: 80px; }
+
+  .purpose-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  .purpose-btn {
+    padding: 12px 8px; border: 2px solid var(--border);
+    border-radius: 10px; text-align: center; cursor: pointer;
+    transition: all 0.2s; background: var(--bg); font-size: 13px;
+    font-weight: 500; color: var(--text-muted);
+  }
+  .purpose-btn.active {
+    border-color: var(--primary); background: #eff6ff;
+    color: var(--primary); font-weight: 700;
+    box-shadow: 0 0 0 3px rgba(26,86,219,0.10);
+  }
+  .purpose-btn .emoji { font-size: 22px; display: block; margin-bottom: 4px; }
+
+  /* PST Sub-type dropdown */
+  .pst-subtype-wrap {
+    display: none;
+    margin-top: 14px;
+    animation: fadeInSub 0.3s ease;
+  }
+  .pst-subtype-wrap.visible { display: block; }
+  @keyframes fadeInSub {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .pst-subtype-wrap label {
+    font-size: 12px; font-weight: 600; color: var(--primary);
+    margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+  }
+  .pst-subtype-wrap select {
+    border-color: var(--primary);
+    background: #eff6ff;
+    font-weight: 600;
+  }
+
+  .count-row {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .count-btn {
+    width: 40px; height: 40px; border-radius: 10px; border: 2px solid var(--border);
+    background: var(--bg); font-size: 20px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: var(--primary); transition: all 0.15s;
+  }
+  .count-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+  #countDisplay {
+    font-size: 22px; font-weight: 800; color: var(--text); min-width: 40px; text-align: center;
+  }
+
+  .btn-submit {
+    width: 100%; padding: 16px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff; font-size: 17px; font-weight: 700; cursor: pointer;
+    transition: all 0.2s; letter-spacing: 0.3px;
+    box-shadow: 0 4px 16px rgba(26,86,219,0.30);
+    margin-top: 8px;
+  }
+  .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,86,219,0.35); }
+  .btn-submit:active { transform: translateY(0); }
+  .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  /* TICKET RESULT */
+  .ticket-card {
+    display: none;
+    text-align: center; animation: slideUp 0.4s ease;
+  }
+  .ticket-number {
+    font-size: 80px; font-weight: 900;
+    background: linear-gradient(135deg, #1a56db, #0ea5e9);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; line-height: 1; margin: 16px 0 8px;
+  }
+  .ticket-label { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; }
+  .ticket-info { background: var(--bg); border-radius: 12px; padding: 16px; text-align: left; margin: 20px 0; }
+  .ticket-info-row { display: flex; justify-content: space-between; padding: 6px 0;
+    border-bottom: 1px solid var(--border); font-size: 14px; }
+  .ticket-info-row:last-child { border-bottom: none; }
+  .ticket-info-row .ti-label { color: var(--text-muted); }
+  .ticket-info-row .ti-val { font-weight: 600; color: var(--text); }
+  .success-icon {
+    width: 80px; height: 80px; background: linear-gradient(135deg, #10b981, #34d399);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 12px; font-size: 36px;
+    box-shadow: 0 8px 20px rgba(16,185,129,0.30);
+  }
+  .btn-new {
+    width: 100%; padding: 14px; border: 2px solid var(--primary); border-radius: 12px;
+    background: transparent; color: var(--primary); font-size: 15px; font-weight: 600;
+    cursor: pointer; margin-top: 12px; transition: all 0.2s;
+  }
+  .btn-new:hover { background: #eff6ff; }
+  .btn-live {
+    display: block; width: 100%; padding: 14px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #10b981, #34d399); color: #fff; text-align: center;
+    text-decoration: none; font-size: 15px; font-weight: 700; cursor: pointer;
+    margin-top: 12px; transition: all 0.2s; box-shadow: 0 4px 16px rgba(16,185,129,0.30);
+  }
+  .btn-live:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16,185,129,0.35); }
+  .toast {
+    display: none; position: fixed; top: 20px; right: 20px;
+    background: var(--danger); color: white; padding: 12px 20px;
+    border-radius: 10px; font-weight: 600; font-size: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 999;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(-10px); } to { opacity:1; transform: translateY(0); } }
+  .loading { display: inline-block; width: 18px; height: 18px;
+    border: 3px solid rgba(255,255,255,0.4); border-top-color: #fff;
+    border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<div class="card" id="formCard">
+  <div class="header">
+    <div class="logo-wrap">📋</div>
+    <h1 id="kantorNama">PST BPS — Sistem Antrian</h1>
+    <p>Isi formulir untuk mendapatkan nomor antrian</p>
+  </div>
+
+  <form id="regForm" onsubmit="return false;">
+    <div class="form-group">
+      <label>Nama Lengkap <span class="req">*</span></label>
+      <input type="text" id="visitorName" placeholder="Masukkan nama lengkap Anda" autocomplete="name" required>
+    </div>
+
+    <div class="form-row-2">
+      <div class="form-group">
+        <label>Email <span class="opt">(opsional)</span></label>
+        <input type="email" id="visitorEmail" placeholder="nama@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>No. HP <span class="opt">(opsional)</span></label>
+        <input type="tel" id="visitorPhone" placeholder="08xxxxxxxxxx" autocomplete="tel">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Tujuan Kunjungan <span class="req">*</span></label>
+      <div class="purpose-grid">
+        <div class="purpose-btn active" data-val="PST" onclick="selectPurpose(this)">
+          <span class="emoji">📊</span>Pelayanan Statistik Terpadu
+        </div>
+        <div class="purpose-btn" data-val="RAPAT" onclick="selectPurpose(this)">
+          <span class="emoji">🤝</span>Rapat / Kerjasama
+        </div>
+        <div class="purpose-btn" data-val="LAINNYA" onclick="selectPurpose(this)">
+          <span class="emoji">📌</span>Keperluan Lainnya
+        </div>
+      </div>
+      <input type="hidden" id="purpose" value="PST">
+
+      <!-- Sub-dropdown: hanya muncul jika pilih PST -->
+      <div class="pst-subtype-wrap visible" id="pstSubtypeWrap">
+        <label>📂 Jenis Layanan PST <span class="req">*</span></label>
+        <select id="pstSubtype">
+          <option value="">— Pilih jenis layanan —</option>
+          <option value="A">A — Perpustakaan</option>
+          <option value="B">B — Konsultasi Statistik</option>
+          <option value="C">C — Produk Statistik Berbayar</option>
+          <option value="D">D — Rekomendasi Statistik</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Keperluan / Detail Kunjungan</label>
+      <textarea id="visitDetail" placeholder="Jelaskan keperluan kunjungan Anda..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Instansi / Alamat</label>
+      <input type="text" id="addressInstansi" placeholder="Nama instansi atau alamat asal">
+    </div>
+
+    <div class="form-group">
+      <label>Jumlah Pengunjung</label>
+      <div class="count-row">
+        <button type="button" class="count-btn" onclick="changeCount(-1)">−</button>
+        <span id="countDisplay">1</span>
+        <button type="button" class="count-btn" onclick="changeCount(1)">+</button>
+        <span style="color:var(--text-muted); font-size:13px;">orang</span>
+      </div>
+      <input type="hidden" id="visitorCount" value="1">
+    </div>
+
+    <button type="button" class="btn-submit" id="submitBtn" onclick="handleSubmit()">
+      Ambil Nomor Antrian
+    </button>
+  </form>
+</div>
+
+<div class="card ticket-card" id="ticketCard">
+  <div class="success-icon">✅</div>
+  <h2 style="font-size:18px; font-weight:700; color:var(--text);">Nomor Antrian Anda</h2>
+  <div class="ticket-number" id="ticketNumber">P-01</div>
+  <p class="ticket-label">Harap menunggu, Anda akan dipanggil</p>
+  <div class="ticket-info" id="ticketInfo"></div>
+  <a class="btn-live" id="btnLiveTicket" href="#" target="_blank" rel="noopener">🔴 Pantau Tiket Secara Live</a>
+  <button class="btn-new" onclick="resetForm()">🔄 Daftar Lagi</button>
+</div>
+
+<script>
+  let visitorCount = 1;
+
+  window.onload = function() {
+    google.script.run
+      .withSuccessHandler(function(info) {
+        if (info && info.nama) {
+          document.getElementById('kantorNama').textContent = info.nama + ' — Antrian PST';
+        }
+      })
+      .withFailureHandler(function(){})
+      .getKantorInfo();
+  };
+
+  function selectPurpose(el) {
+    document.querySelectorAll('.purpose-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    const val = el.dataset.val;
+    document.getElementById('purpose').value = val;
+    // Tampilkan/sembunyikan sub-dropdown PST
+    const subWrap = document.getElementById('pstSubtypeWrap');
+    if (val === 'PST') {
+      subWrap.classList.add('visible');
+    } else {
+      subWrap.classList.remove('visible');
+      document.getElementById('pstSubtype').value = '';
+    }
+  }
+
+  function changeCount(delta) {
+    visitorCount = Math.max(1, Math.min(50, visitorCount + delta));
+    document.getElementById('countDisplay').textContent = visitorCount;
+    document.getElementById('visitorCount').value = visitorCount;
+  }
+
+  function showToast(msg, isErr) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = isErr ? '#ef4444' : '#10b981';
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 4000);
+  }
+
+  function handleSubmit() {
+    const name = document.getElementById('visitorName').value.trim();
+    if (!name) { showToast('Nama tidak boleh kosong!', true); return; }
+
+    const purpose = document.getElementById('purpose').value;
+    // Validasi sub-tipe PST wajib dipilih
+    if (purpose === 'PST') {
+      const sub = document.getElementById('pstSubtype').value;
+      if (!sub) { showToast('Pilih jenis layanan PST terlebih dahulu!', true); return; }
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span>Mendaftarkan...';
+
+    const pstSub = document.getElementById('pstSubtype').value;
+    const pstSubLabel = { A: 'A — Perpustakaan', B: 'B — Konsultasi Statistik', C: 'C — Produk Statistik Berbayar', D: 'D — Rekomendasi Statistik' };
+    const formData = {
+      visitorName:     name,
+      email:           document.getElementById('visitorEmail').value.trim(),
+      phone:           document.getElementById('visitorPhone').value.trim(),
+      purpose:         purpose,
+      pstSubType:      pstSub,
+      pstSubLabel:     pstSub ? (pstSubLabel[pstSub] || pstSub) : '',
+      visitDetail:     document.getElementById('visitDetail').value.trim(),
+      addressInstansi: document.getElementById('addressInstansi').value.trim(),
+      visitorCount:    document.getElementById('visitorCount').value,
+    };
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res.ok) {
+          showTicket(res, formData);
+        } else {
+          showToast('Gagal mendaftar: ' + res.error, true);
+          btn.disabled = false;
+          btn.textContent = 'Ambil Nomor Antrian';
+        }
+      })
+      .withFailureHandler(function(err) {
+        showToast('Error: ' + err.message, true);
+        btn.disabled = false;
+        btn.textContent = 'Ambil Nomor Antrian';
+      })
+      .submitRegistration(formData);
+  }
+
+  function purposeLabel(p, sub) {
+    const m = { PST: 'Pelayanan Statistik Terpadu', RAPAT: 'Rapat / Kerjasama', LAINNYA: 'Keperluan Lainnya' };
+    const base = m[p] || p;
+    return sub ? base + ' (' + sub + ')' : base;
+  }
+
+  function showTicket(res, formData) {
+    document.getElementById('ticketNumber').textContent = res.ticket;
+    document.getElementById('ticketInfo').innerHTML = `
+      <div class="ticket-info-row">
+        <span class="ti-label">Nama</span>
+        <span class="ti-val">${formData.visitorName}</span>
+      </div>
+      <div class="ticket-info-row">
+        <span class="ti-label">Tujuan</span>
+        <span class="ti-val">${purposeLabel(formData.purpose, formData.pstSubLabel)}</span>
+      </div>
+      ${formData.pstSubType ? `<div class="ticket-info-row">
+        <span class="ti-label">Jenis Layanan</span>
+        <span class="ti-val">${formData.pstSubLabel}</span>
+      </div>` : ''}
+      ${formData.visitDetail ? `<div class="ticket-info-row">
+        <span class="ti-label">Keperluan</span>
+        <span class="ti-val">${formData.visitDetail}</span>
+      </div>` : ''}
+      <div class="ticket-info-row">
+        <span class="ti-label">Jumlah Orang</span>
+        <span class="ti-val">${formData.visitorCount} orang</span>
+      </div>
+      <div class="ticket-info-row">
+        <span class="ti-label">Instansi</span>
+        <span class="ti-val">${formData.addressInstansi || '—'}</span>
+      </div>
+      <div style="margin-top:20px; text-align:center; padding-top:16px; border-top:2px dashed var(--border);">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=6&data=${encodeURIComponent(res.ticket + ' - ' + formData.visitorName)}" alt="QR Code Tiket" style="width:170px; height:170px; border-radius:16px; border:3px solid var(--primary); padding:8px; background:white; box-shadow:0 6px 20px rgba(26,86,219,0.15);">
+        <p style="font-size:13px; font-weight:700; color:var(--text); margin-top:10px;">QR Code Tiket Antrian Anda</p>
+        <p style="font-size:12px; color:var(--text-muted); margin-top:2px;">Tunjukkan QR Code ini kepada petugas loket PST</p>
+      </div>
+    `;
+    // Tautan ke halaman pelacakan tiket live (?page=tiket&id=...), dibuka di tab baru
+    const liveUrl = location.href.split('?')[0] + '?page=tiket&id=' + encodeURIComponent(res.id);
+    document.getElementById('btnLiveTicket').href = liveUrl;
+
+    document.getElementById('formCard').style.display = 'none';
+    const tc = document.getElementById('ticketCard');
+    tc.style.display = 'block';
+    tc.style.animation = 'slideUp 0.4s ease';
+  }
+
+  function resetForm() {
+    document.getElementById('ticketCard').style.display = 'none';
+    document.getElementById('formCard').style.display = 'block';
+    document.getElementById('regForm').reset();
+    document.getElementById('visitorName').value = '';
+    document.getElementById('visitorEmail').value = '';
+    document.getElementById('visitorPhone').value = '';
+    document.getElementById('visitDetail').value = '';
+    document.getElementById('addressInstansi').value = '';
+    visitorCount = 1;
+    document.getElementById('countDisplay').textContent = '1';
+    document.getElementById('visitorCount').value = '1';
+    document.getElementById('purpose').value = 'PST';
+    document.getElementById('pstSubtype').value = '';
+    document.getElementById('pstSubtypeWrap').classList.add('visible');
+    document.querySelectorAll('.purpose-btn').forEach((b,i) => {
+      b.classList.toggle('active', i === 0);
+    });
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = false;
+    btn.textContent = 'Ambil Nomor Antrian';
+  }
+</script>
+</body>
+</html>

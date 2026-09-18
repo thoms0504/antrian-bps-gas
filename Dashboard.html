@@ -1,0 +1,2352 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dasbor Petugas — PST BPS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #1a56db; --primary-dark: #1342af; --secondary: #0ea5e9; --accent: #f59e0b;
+    --success: #10b981; --success-dark: #059669; --warning: #f59e0b; --danger: #ef4444;
+    --bg: #f4f6fb; --surface: #ffffff; --text: #0f172a; --text-muted: #64748b; --text-faint: #94a3b8;
+    --border: #e6eaf2; --border-strong: #d6dceb;
+    --radius-sm: 8px; --radius: 14px; --radius-lg: 20px;
+    --shadow-sm: 0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+    --shadow: 0 8px 24px rgba(26,86,219,.08), 0 2px 6px rgba(15,23,42,.04);
+    --shadow-lg: 0 20px 45px rgba(15,23,42,.14);
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px;
+  }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.45;
+  }
+
+  /* ── LOGIN ── */
+  .login-wrap {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+    background: radial-gradient(1200px 600px at 15% 10%, #2563eb 0%, transparent 55%),
+                radial-gradient(1000px 700px at 90% 90%, #0ea5e9 0%, transparent 55%),
+                linear-gradient(135deg, #123a99, #0b2f7a 55%, #082567);
+    padding: 20px;
+  }
+  .login-card {
+    background: var(--surface); border-radius: var(--radius-lg); padding: 44px 40px;
+    width: 100%; max-width: 420px;
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.4s ease; position: relative; z-index: 1;
+  }
+  @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .login-logo {
+    width: 64px; height: 64px; background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-radius: 18px; display: flex; align-items: center; justify-content: center;
+    font-size: 28px; margin: 0 auto 18px; box-shadow: 0 10px 24px rgba(26,86,219,.35);
+  }
+  .login-card h2 { text-align: center; font-size: 21px; font-weight: 800; letter-spacing: -.01em; margin-bottom: 4px; }
+  .login-card p { text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 26px; }
+  label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; letter-spacing: .01em; }
+  input[type=text], input[type=password] {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border-strong); border-radius: var(--radius-sm);
+    font-size: 14.5px; font-family: inherit; color: var(--text); background: var(--bg);
+    outline: none; transition: border-color .15s, box-shadow .15s, background .15s; margin-bottom: 16px;
+  }
+  input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(26,86,219,.12); background: var(--surface); }
+  .btn-primary {
+    width: 100%; padding: 13px; border: none; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: .01em;
+    transition: transform .15s, box-shadow .15s; box-shadow: 0 6px 16px rgba(26,86,219,.28);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(26,86,219,.34); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
+  .err-msg { color: var(--danger); font-size: 13px; text-align: center; margin-top: 10px; display: none; font-weight: 600; }
+
+  /* ── DASHBOARD SHELL ── */
+  .dashboard { display: none; }
+  .topbar {
+    background: linear-gradient(100deg, #123a99, var(--primary) 55%, var(--secondary));
+    color: white; padding: 14px 28px;
+    display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+    box-shadow: 0 2px 16px rgba(15,23,42,.18); position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 14px; }
+  .topbar-icon {
+    font-size: 20px; width: 40px; height: 40px; border-radius: 12px;
+    background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .topbar h1 { font-size: 16.5px; font-weight: 800; letter-spacing: -.01em; }
+  .topbar p { font-size: 11.5px; opacity: .82; margin-top: 1px; }
+  .user-badge {
+    display: flex; align-items: center; gap: 9px;
+    background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,.16);
+    border-radius: 999px; padding: 6px 14px 6px 6px; font-size: 13px; font-weight: 600;
+  }
+  .avatar-initials {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(255,255,255,0.35); display: flex; align-items: center;
+    justify-content: center; font-weight: 800; font-size: 12.5px;
+  }
+  .btn-logout {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,.22);
+    color: white; padding: 7px 14px; border-radius: var(--radius-sm); font-size: 12px;
+    font-weight: 700; cursor: pointer; transition: all .15s;
+  }
+  .btn-logout:hover { background: rgba(239,68,68,.35); border-color: rgba(239,68,68,.5); }
+
+  .content { padding: 26px 24px 60px; max-width: 920px; margin: 0 auto; animation: fadeIn .25s ease; }
+
+  /* Stats */
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--surface); border-radius: var(--radius); padding: 18px 20px;
+    box-shadow: var(--shadow-sm); border: 1px solid var(--border); position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--border-strong);
+  }
+  .stat-card.waiting::before { background: var(--primary); }
+  .stat-card.serving::before { background: var(--warning); }
+  .stat-card.done::before { background: var(--success); }
+  .stat-number { font-size: 32px; font-weight: 900; margin-bottom: 2px; letter-spacing: -.02em; }
+  .stat-label { font-size: 12.5px; color: var(--text-muted); font-weight: 600; }
+  .stat-card.waiting .stat-number { color: var(--primary); }
+  .stat-card.serving .stat-number { color: #b45309; }
+  .stat-card.done .stat-number { color: var(--success-dark); }
+
+  .section-title {
+    font-size: 15px; font-weight: 800; margin-bottom: 14px; color: var(--text);
+    display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
+    letter-spacing: -.01em;
+  }
+  .btn-refresh {
+    font-size: 12px; background: var(--surface); border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-sm); padding: 6px 13px; cursor: pointer; color: var(--text-muted);
+    font-weight: 700; transition: all .15s;
+  }
+  .btn-refresh:hover { background: #eff6ff; border-color: var(--primary); color: var(--primary); }
+
+  /* Queue cards */
+  .queue-list { display: flex; flex-direction: column; gap: 10px; }
+  .queue-card {
+    background: var(--surface); border-radius: var(--radius); padding: 16px 18px;
+    box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px;
+    border-left: 4px solid var(--border-strong); transition: box-shadow .2s, transform .2s;
+    animation: cardIn .25s ease;
+  }
+  .queue-card:hover { box-shadow: var(--shadow); }
+  @keyframes cardIn { from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)} }
+  .queue-card.status-waiting { border-left-color: var(--primary); }
+  .queue-card.status-in_service { border-left-color: var(--warning); background: #fffdf7; }
+  .queue-card.status-done { border-left-color: var(--success); opacity: .68; }
+
+  .ticket-box {
+    min-width: 60px; height: 60px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 900; flex-shrink: 0; letter-spacing: -.02em;
+  }
+  .status-waiting .ticket-box { background: #eaf1ff; color: var(--primary); }
+  .status-in_service .ticket-box { background: #fef3c7; color: #b45309; }
+  .status-done .ticket-box { background: #d1fae5; color: var(--success-dark); }
+
+  .card-info { flex: 1; min-width: 0; }
+  .visitor-name { font-size: 15.5px; font-weight: 800; letter-spacing: -.01em; }
+  .visitor-meta { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; }
+  .visitor-purpose {
+    display: inline-block; font-size: 10.5px; font-weight: 800; letter-spacing: .02em;
+    padding: 3px 10px; border-radius: 999px; margin-top: 7px; text-transform: uppercase;
+  }
+  .purpose-pst { background: #dbeafe; color: var(--primary); }
+  .purpose-rapat { background: #ede9fe; color: #7c3aed; }
+  .purpose-lainnya { background: #fce7f3; color: #be185d; }
+
+  .card-actions { display: flex; flex-direction: column; align-items: stretch; gap: 8px; flex-shrink: 0; min-width: 168px; }
+  .card-actions-secondary { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  .btn-action {
+    padding: 10px 18px; border: none; border-radius: var(--radius-sm); font-size: 13px;
+    font-weight: 700; cursor: pointer; transition: transform .15s, box-shadow .15s; white-space: nowrap;
+  }
+  .btn-start { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; box-shadow: 0 4px 12px rgba(26,86,219,.25); }
+  .btn-start:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(26,86,219,.32); }
+  .btn-done { background: linear-gradient(135deg, var(--success), #34d399); color: white; box-shadow: 0 4px 12px rgba(16,185,129,.25); }
+  .btn-done:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(16,185,129,.32); }
+  .btn-action:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* Tombol aksi sekunder (Panggil Ulang / Tambah Pendamping / Ping) — gaya seragam berupa
+     chip kecil agar kartu antrian tidak penuh tombol besar bertumpuk. */
+  .btn-chip {
+    padding: 6px 12px; border-radius: 999px; font-size: 11.5px; font-weight: 700;
+    cursor: pointer; transition: all .15s; white-space: nowrap; background: var(--surface);
+  }
+  .btn-recall { border: 1.5px solid var(--warning); color: #b45309; }
+  .btn-recall:hover { background: var(--warning); color: white; }
+  .btn-pendamping { border: 1.5px solid var(--primary); color: var(--primary); }
+  .btn-pendamping:hover { background: var(--primary); color: white; }
+  .btn-ping { border: 1.5px solid var(--secondary); color: #0369a1; }
+  .btn-ping:hover { background: var(--secondary); color: white; }
+
+  .rating-badge {
+    font-size: 11px; background: #fef3c7; color: #b45309;
+    border-radius: 999px; padding: 3px 11px; font-weight: 700; margin-top: 4px; display: inline-block;
+  }
+
+  /* ── MODAL: umum ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(10,15,30,0.55); backdrop-filter: blur(6px);
+    z-index: 1000; align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: var(--surface); border-radius: var(--radius-lg); padding: 32px 30px;
+    width: 100%; max-width: 440px; box-shadow: var(--shadow-lg);
+    animation: modalIn .25s cubic-bezier(.2,.9,.3,1); max-height: 90vh; overflow-y: auto;
+  }
+  @keyframes modalIn { from{opacity:0;transform:scale(.94) translateY(8px)} to{opacity:1;transform:scale(1) translateY(0)} }
+  .modal-title { font-size: 17px; font-weight: 800; margin-bottom: 4px; letter-spacing: -.01em; }
+  .modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 22px; }
+
+  select {
+    width: 100%; padding: 11px 14px; border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; color: var(--text);
+    background: var(--bg); outline: none; margin-bottom: 14px; cursor: pointer;
+    transition: border-color .15s;
+  }
+  select:focus { border-color: var(--primary); }
+  textarea {
+    width: 100%; padding: 11px 14px; border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; color: var(--text);
+    background: var(--bg); outline: none; resize: vertical; min-height: 78px;
+    margin-bottom: 18px; transition: border-color .15s;
+  }
+  textarea:focus { border-color: var(--primary); }
+  .modal-btns { display: flex; gap: 10px; }
+  .btn-cancel { flex: 1; padding: 12px; border: 1.5px solid var(--border-strong); border-radius: var(--radius-sm);
+    background: transparent; color: var(--text-muted); font-size: 13.5px; font-weight: 700;
+    cursor: pointer; transition: all .15s; }
+  .btn-cancel:hover { border-color: var(--danger); color: var(--danger); background: #fef2f2; }
+  .btn-confirm { flex: 2; padding: 12px; border: none; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--success), #34d399);
+    color: white; font-size: 13.5px; font-weight: 700; cursor: pointer; transition: all .15s;
+    box-shadow: 0 4px 12px rgba(16,185,129,.28); }
+  .btn-confirm:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(16,185,129,.34); }
+
+  /* ── MODAL: Rating ── */
+  .rating-modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(10,15,30,0.6); backdrop-filter: blur(8px);
+    z-index: 1001; align-items: center; justify-content: center; padding: 16px;
+  }
+  .rating-modal-overlay.show { display: flex; }
+  .rating-modal {
+    background: var(--surface); border-radius: var(--radius-lg); padding: 36px 32px;
+    width: 100%; max-width: 420px; text-align: center;
+    box-shadow: var(--shadow-lg); animation: modalIn .3s cubic-bezier(.2,.9,.3,1);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .rating-icon { font-size: 48px; margin-bottom: 10px; }
+  .rating-modal h3 { font-size: 19px; font-weight: 800; margin-bottom: 6px; letter-spacing: -.01em; }
+  .rating-visitor { font-size: 13.5px; color: var(--text-muted); margin-bottom: 22px; }
+  .stars { display: flex; justify-content: center; gap: 8px; margin-bottom: 14px; }
+  .star {
+    font-size: 40px; cursor: pointer; transition: transform .15s;
+    filter: grayscale(1) opacity(0.35); line-height: 1;
+  }
+  .star.active { filter: none; transform: scale(1.12); }
+  .star:hover { transform: scale(1.15); filter: none; }
+  .star-labels { font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; height: 18px; font-weight: 600; }
+  .rating-textarea { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-sm); font-size: 13.5px; font-family: inherit; color: var(--text);
+    background: var(--bg); outline: none; resize: none; height: 76px; margin-bottom: 18px; }
+  .rating-textarea:focus { border-color: var(--primary); }
+  .btn-rating-skip {
+    width: 100%; padding: 11px; border: 1.5px solid var(--border-strong); border-radius: var(--radius-sm);
+    background: transparent; color: var(--text-muted); font-size: 13.5px; font-weight: 700;
+    cursor: pointer; transition: all .15s; margin-top: 8px;
+  }
+  .btn-rating-skip:hover { background: var(--bg); }
+  .btn-rating-submit {
+    width: 100%; padding: 13px; border: none; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--warning), #fbbf24);
+    color: white; font-size: 15px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 6px 16px rgba(245,158,11,.28); transition: all .15s;
+  }
+  .btn-rating-submit:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(245,158,11,.34); }
+
+  /* Toast */
+  .toast {
+    display: none; position: fixed; top: 20px; right: 20px; left: 20px; z-index: 9999;
+    margin: 0 auto; max-width: 420px;
+    padding: 14px 20px; border-radius: var(--radius-sm); font-weight: 700; font-size: 13.5px;
+    box-shadow: var(--shadow-lg); animation: toastIn .25s cubic-bezier(.2,.9,.3,1);
+  }
+  @keyframes toastIn { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
+  .loading { display: inline-block; width: 15px; height: 15px;
+    border: 3px solid rgba(255,255,255,.4); border-top-color: white;
+    border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state { text-align: center; padding: 44px 20px; color: var(--text-muted); }
+  .empty-state .ei { font-size: 48px; margin-bottom: 14px; opacity: .7; }
+  .empty-state p { font-size: 14px; font-weight: 600; }
+
+  /* ── Tab navigation ── */
+  .tabbar {
+    display: flex; gap: 4px; background: var(--surface); padding: 10px 24px;
+    border-bottom: 1px solid var(--border); overflow-x: auto; position: sticky; top: 61px; z-index: 40;
+  }
+  .tab-btn {
+    padding: 9px 16px; border: none; background: transparent; cursor: pointer;
+    font-size: 12.5px; font-weight: 700; color: var(--text-muted); border-radius: 999px;
+    white-space: nowrap; transition: all .15s;
+  }
+  .tab-btn:hover { color: var(--primary); background: #eff6ff; }
+  .tab-btn.active { color: white; background: linear-gradient(135deg, var(--primary), var(--secondary)); box-shadow: 0 4px 10px rgba(26,86,219,.28); }
+
+  /* ── Card box (dipakai jadwal/rekap/profil) ── */
+  .card-box {
+    background: var(--surface); border-radius: var(--radius); padding: 20px;
+    box-shadow: var(--shadow-sm); border: 1px solid var(--border); margin-bottom: 4px;
+  }
+  .card-box label { display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 6px; }
+  .card-box input[type=text], .card-box input[type=password],
+  .card-box input[type=month], .card-box input[type=date], .card-box select {
+    width: 100%; padding: 10px 13px; border: 1.5px solid var(--border-strong); border-radius: var(--radius-sm);
+    font-size: 13.5px; font-family: inherit; color: var(--text); background: var(--bg);
+    outline: none; transition: border-color .15s;
+  }
+  .card-box input:focus, .card-box select:focus { border-color: var(--primary); }
+  .form-msg { font-size: 12.5px; margin-top: 10px; font-weight: 700; min-height: 18px; }
+  .form-msg.ok { color: var(--success-dark); }
+  .form-msg.err { color: var(--danger); }
+
+  .check-list { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto;
+    border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px; background: var(--bg); }
+  .check-item { display: flex; align-items: center; gap: 10px; padding: 7px 9px; border-radius: var(--radius-sm); transition: background .1s; }
+  .check-item:hover { background: var(--surface); }
+  .check-item input { width: auto !important; accent-color: var(--primary); }
+  .check-item label { margin: 0 !important; font-weight: 500 !important; font-size: 13px !important; cursor: pointer; }
+
+  /* ── Rekap bars sederhana (tanpa library chart) ── */
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .bar-row .bar-label { min-width: 88px; font-size: 12px; font-weight: 700; color: var(--text-muted); }
+  .bar-row .bar-track { flex: 1; background: var(--bg); border-radius: 999px; height: 16px; overflow: hidden; }
+  .bar-row .bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 999px;
+    display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; color: white; font-size: 10.5px; font-weight: 700; transition: width .4s ease; }
+  .bar-row .bar-value { min-width: 28px; font-size: 12px; font-weight: 700; text-align: right; }
+
+  .not-scheduled-note {
+    font-size: 11.5px; color: var(--text-muted); font-style: italic; padding: 6px 2px; line-height: 1.4;
+  }
+
+  /* ── Kalender rotasi petugas ── */
+  .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .cal-dow {
+    text-align: center; font-size: 10.5px; font-weight: 800; color: var(--text-muted);
+    padding-bottom: 6px; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .cal-day {
+    min-height: 64px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 6px; cursor: pointer; background: var(--bg); transition: all .15s;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .cal-day:hover { border-color: var(--primary); background: #eff6ff; transform: translateY(-1px); }
+  .cal-day.empty { background: transparent; border: none; cursor: default; }
+  .cal-day.empty:hover { transform: none; }
+  .cal-day.today { border-color: var(--accent); border-width: 2px; }
+  .cal-day.selected { border-color: var(--primary); border-width: 2px; background: #eff6ff; }
+  .cal-day-num { font-size: 12px; font-weight: 800; color: var(--text); }
+  .cal-day-names { font-size: 9.5px; color: var(--primary); line-height: 1.3; overflow: hidden; font-weight: 600; }
+  .cal-day-names .cal-more { color: var(--text-muted); }
+
+  /* ── Mode Bertugas (toggle petugas) ── */
+  .duty-toggle-wrap {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,.16);
+    border-radius: 999px; padding: 6px 14px 6px 6px;
+    font-size: 11.5px; font-weight: 700; color: white;
+  }
+  .duty-switch {
+    position: relative; width: 36px; height: 20px; border-radius: 999px;
+    background: rgba(255,255,255,0.32); cursor: pointer; transition: background .2s; border: none; flex-shrink: 0;
+  }
+  .duty-switch.on { background: var(--success); }
+  .duty-switch .knob {
+    position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+    background: white; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .duty-switch.on .knob { transform: translateX(16px); }
+
+  /* ── Ping / Ready ── */
+  .btn-ready {
+    background: linear-gradient(135deg, var(--success), #34d399); color: white;
+    border: none; padding: 13px 20px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 700;
+    cursor: pointer; width: 100%; box-shadow: 0 6px 16px rgba(16,185,129,.28); transition: all .15s;
+  }
+  .btn-ready:hover { transform: translateY(-1px); }
+  .ping-modal-icon { font-size: 44px; text-align: center; margin-bottom: 8px; }
+
+  /* ── Pendamping (multi-petugas) ── */
+  .collab-chip {
+    display: inline-block; font-size: 10.5px; background: #ede9fe; color: #7c3aed;
+    border-radius: 999px; padding: 3px 10px; margin: 2px 4px 0 0; font-weight: 700;
+  }
+  .onduty-chip {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700;
+    background: #ecfdf5; color: var(--success-dark); border: 1px solid #a7f3d0;
+    border-radius: 999px; padding: 4px 11px;
+  }
+  .onduty-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
+
+  .btn-export {
+    font-size: 12px; background: linear-gradient(135deg, var(--success), #34d399); color: white;
+    border: none; border-radius: var(--radius-sm); padding: 7px 15px; cursor: pointer; font-weight: 700;
+    transition: all .15s;
+  }
+  .btn-export:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16,185,129,.3); }
+  .btn-sync {
+    font-size: 12px; background: linear-gradient(135deg, var(--secondary), #38bdf8); color: white;
+    border: none; border-radius: var(--radius-sm); padding: 8px 16px; cursor: pointer; font-weight: 700;
+    transition: all .15s;
+  }
+  .btn-sync:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(14,165,233,.3); }
+  .btn-template {
+    font-size: 12px; background: var(--surface); color: var(--secondary);
+    border: 1.5px solid var(--secondary); border-radius: var(--radius-sm); padding: 7px 15px;
+    cursor: pointer; font-weight: 700; transition: all .15s;
+  }
+  .btn-template:hover { background: var(--secondary); color: white; }
+
+  /* ── Responsif untuk layar sempit (tablet/HP) ── */
+  @media (max-width: 720px) {
+    .content { padding: 18px 14px 50px; }
+    .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .topbar { padding: 12px 16px; }
+    .topbar p { display: none; }
+    .queue-card { flex-direction: column; align-items: stretch; }
+    .card-actions { min-width: 0; width: 100%; }
+    .card-actions-secondary { justify-content: flex-start; }
+    .tabbar { top: 57px; padding: 8px 12px; }
+    .section-title { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <div class="login-logo">👤</div>
+    <h2>Masuk Dasbor Petugas</h2>
+    <p>Sistem Antrian PST BPS</p>
+    <div>
+      <label>Email / Username</label>
+      <input type="text" id="loginNama" placeholder="nip.lama@bps.go.id atau username" autocomplete="username">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter') doLogin()">
+      <button class="btn-primary" id="loginBtn" onclick="doLogin()">Masuk</button>
+      <div class="err-msg" id="loginErr"></div>
+      <p style="text-align:center; font-size:11px; color:var(--text-faint); margin-top:16px; line-height:1.6;">
+        Pegawai hasil Sinkronisasi Wawai API: email <strong>{NIP Lama}@bps.go.id</strong>, password <strong>8 digit pertama NIP Baru</strong>.<br>
+        Akun sistem: superadmin/admin/resepsionis — password default <strong>lihat README</strong>.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard" id="dashboard">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-icon">📊</span>
+      <div>
+        <h1>Dasbor Petugas PST</h1>
+        <p>Sistem Antrian Backup — Google Apps Script</p>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div class="duty-toggle-wrap" id="dutyToggleWrap" style="display:none;">
+        <span id="dutyToggleLabel">Mode Bertugas</span>
+        <button class="duty-switch" id="dutySwitch" onclick="toggleDutyMode()"><span class="knob"></span></button>
+      </div>
+      <div class="user-badge">
+        <div class="avatar-initials" id="userInitials">P</div>
+        <span id="userName">Petugas</span>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Keluar</button>
+    </div>
+  </div>
+
+  <div class="tabbar" id="tabbar">
+    <button class="tab-btn active" data-tab="antrian" onclick="switchTab('antrian')">📋 Antrian</button>
+    <button class="tab-btn" data-tab="master" onclick="switchTab('master')" style="display:none;">🧑‍💼 Master Pegawai</button>
+    <button class="tab-btn" data-tab="jadwal" onclick="switchTab('jadwal')" style="display:none;">🗓️ Jadwal</button>
+    <button class="tab-btn" data-tab="rekap" onclick="switchTab('rekap')" style="display:none;">📈 Rekap &amp; Insight</button>
+    <button class="tab-btn" data-tab="profil" onclick="switchTab('profil')">👤 Profil Saya</button>
+  </div>
+
+  <div class="content" id="tab-antrian">
+    <div class="card-box" id="onDutyBanner" style="margin-bottom:18px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <span style="font-weight:800; font-size:12.5px; color:var(--text-muted); white-space:nowrap;">👥 Bertugas Sekarang:</span>
+      <span id="onDutyChips" style="display:flex; flex-wrap:wrap; gap:6px;">Memuat...</span>
+    </div>
+
+    <div class="card-box" id="myStatusBanner" style="display:none; margin-bottom:18px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+        <div>
+          <div style="font-weight:800; font-size:13px;">👋 Status Saya Hari Ini</div>
+          <div id="myStatusText" style="font-size:12.5px; color:var(--text-muted); margin-top:3px;">Memuat...</div>
+        </div>
+        <div style="font-size:28px; font-weight:900; color:var(--primary);" id="myServedCount">0</div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card waiting">
+        <div class="stat-number" id="statWaiting">0</div>
+        <div class="stat-label">🕐 Menunggu</div>
+      </div>
+      <div class="stat-card serving">
+        <div class="stat-number" id="statServing">0</div>
+        <div class="stat-label">⚡ Sedang Dilayani</div>
+      </div>
+      <div class="stat-card done">
+        <div class="stat-number" id="statDone">0</div>
+        <div class="stat-label">✅ Selesai</div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      Daftar Antrian Hari Ini
+      <button class="btn-refresh" onclick="loadQueue()">🔄 Refresh</button>
+    </div>
+    <div class="queue-list" id="queueList">
+      <div class="empty-state"><div class="ei">📭</div><p>Memuat data...</p></div>
+    </div>
+  </div>
+
+  <!-- TAB: MASTER PEGAWAI -->
+  <div class="content" id="tab-master" style="display:none;">
+    <div class="section-title">
+      🧑‍💼 Master Data Pegawai
+      <div style="display:flex; gap:8px;">
+        <button class="btn-sync" id="btnSyncWawai" onclick="syncWawaiUI()">🔄 Sinkronisasi Data Pegawai (Wawai API)</button>
+        <button class="btn-primary" style="width:auto; padding:9px 18px; font-size:13px;" onclick="openEmployeeModal(null)">+ Tambah Pegawai</button>
+      </div>
+    </div>
+    <div class="form-msg" id="syncWawaiMsg" style="padding:0 0 10px;"></div>
+    <div class="card-box">
+      <input type="text" id="masterSearchInput" placeholder="🔍 Cari nama atau username pegawai..." oninput="renderMasterPegawaiTable()">
+    </div>
+    <div class="card-box" style="margin-top:14px; max-height:520px; overflow-y:auto;">
+      <table style="width:100%; font-size:13px; border-collapse:collapse;" id="masterPegawaiTable">
+        <thead>
+          <tr style="text-align:left; color:var(--text-muted); border-bottom:2px solid var(--border);">
+            <th style="padding:8px;">Nama</th><th>Username</th><th>Role</th><th>Status</th><th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="masterPegawaiTbody"></tbody>
+      </table>
+      <p id="masterEmptyNote" style="display:none; text-align:center; color:var(--text-muted); padding:24px 0;">Tidak ada pegawai ditemukan.</p>
+    </div>
+  </div>
+
+  <!-- TAB: JADWAL -->
+  <div class="content" id="tab-jadwal" style="display:none;">
+    <div class="jadwal-section" id="calendarSection">
+      <div class="section-title">
+        📆 Kalender Rotasi Petugas
+      </div>
+      <div class="card-box">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <button class="btn-refresh" onclick="calendarPrevMonth()">◀ Bulan Lalu</button>
+          <div id="calendarMonthLabel" style="font-weight:800; font-size:15px;">—</div>
+          <button class="btn-refresh" onclick="calendarNextMonth()">Bulan Depan ▶</button>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <p style="font-size:11px; color:var(--text-muted); margin-top:10px;">
+          Klik salah satu tanggal untuk mengatur petugas on-duty hari itu (akan terisi otomatis di bagian "Jadwal Harian" di bawah).
+        </p>
+      </div>
+    </div>
+
+    <div class="jadwal-section" id="jadwalBulananSection" style="display:none;">
+      <div class="section-title" style="margin-top:20px;">🗓️ Jadwal Bulanan (Rotasi Petugas &amp; Resepsionis)</div>
+      <div class="card-box">
+        <label>Periode</label>
+        <input type="month" id="periodeInput" onchange="onPeriodeInputChange()">
+        <label style="margin-top:14px;">🔍 Cari Pegawai</label>
+        <input type="text" id="jadwalSearchInput" placeholder="Ketik nama atau username untuk mencari dari master pegawai..." oninput="renderJadwalBulananUI()">
+        <div style="margin-top:14px;">
+          <label>Pilih Petugas (maksimal 3)</label>
+          <div id="petugasCheckList" class="check-list"></div>
+        </div>
+        <div style="margin-top:14px;">
+          <label>Pilih Resepsionis (maksimal 1)</label>
+          <div id="resepsionisCheckList" class="check-list"></div>
+        </div>
+        <button class="btn-primary" style="margin-top:16px;" onclick="saveJadwalBulananUI()">💾 Simpan Jadwal Bulanan</button>
+        <div id="jadwalBulananMsg" class="form-msg"></div>
+      </div>
+    </div>
+
+    <div class="jadwal-section" id="importExcelSection" style="display:none;">
+      <div class="section-title" style="margin-top:20px;">📥 Import Jadwal Bulanan dari Excel</div>
+      <div class="card-box">
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px; line-height:1.6;">
+          Kolom: <b>Periode</b> (yyyy-mm), <b>Nama</b> (harus sama persis dengan Master Pegawai), <b>Role</b> (PETUGAS/RESEPSIONIS).
+          Maksimal 3 baris PETUGAS dan 1 baris RESEPSIONIS per periode — kelebihan akan diabaikan.
+          <b>Baris dengan kolom Role dikosongkan akan dilewati</b> (tidak otomatis jadi PETUGAS) — jadi Anda cukup mengisi Role untuk pegawai yang memang bertugas bulan itu.
+        </p>
+        <button class="btn-template" onclick="downloadJadwalTemplate()">⬇️ Unduh Template Excel</button>
+        <p style="font-size:11px; color:var(--text-faint); margin:8px 0 14px;">
+          Template sudah terisi Periode & daftar nama pegawai ber-Role PETUGAS/RESEPSIONIS dari Master Pegawai — tinggal isi kolom Role untuk yang bertugas bulan ini, sisanya biarkan kosong.
+        </p>
+        <input type="file" id="excelUploadInput" accept=".xlsx,.xls">
+        <button class="btn-primary" style="margin-top:14px;" onclick="processExcelUpload()">⬆️ Proses &amp; Simpan</button>
+        <div id="excelUploadMsg" class="form-msg"></div>
+      </div>
+    </div>
+
+    <div class="jadwal-section" id="jadwalHarianSection">
+      <div class="section-title" style="margin-top:20px;">📅 Jadwal Harian (Petugas On-Duty Hari Ini)</div>
+      <div class="card-box">
+        <label>Tanggal</label>
+        <input type="date" id="tanggalHarianInput" onchange="renderJadwalHarianUI()">
+        <p style="font-size:12px; color:var(--text-muted); margin:10px 0;">
+          Centang petugas (dari roster bulanan periode ini) yang bertugas pada tanggal tsb.
+          Petugas yang tidak dicentang tidak akan muncul untuk ditugaskan hari itu.
+        </p>
+        <div id="harianCheckList" class="check-list"></div>
+        <button class="btn-primary" style="margin-top:16px;" onclick="saveJadwalHarianUI()">💾 Simpan Jadwal Harian</button>
+        <div id="jadwalHarianMsg" class="form-msg"></div>
+      </div>
+
+      <div class="card-box" style="margin-top:14px;">
+        <div class="section-title" style="margin-bottom:6px;">📥 Import Rotasi Harian Satu Bulan dari Excel</div>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px; line-height:1.6;">
+          Daripada mengatur tanggal satu per satu, unduh template berisi seluruh tanggal di bulan yang
+          sedang ditampilkan pada Kalender Rotasi × petugas roster bulanan tsb. <b>Hapus baris untuk
+          kombinasi Tanggal+Nama yang TIDAK bertugas hari itu</b>, sisakan hanya yang bertugas, lalu
+          unggah kembali — seluruh bulan tersimpan sekaligus.
+        </p>
+        <button class="btn-template" onclick="downloadJadwalHarianTemplate()">⬇️ Unduh Template Excel</button>
+        <input type="file" id="harianExcelUploadInput" accept=".xlsx,.xls" style="margin-top:12px;">
+        <button class="btn-primary" style="margin-top:14px;" onclick="processJadwalHarianExcelUpload()">⬆️ Proses &amp; Simpan Satu Bulan</button>
+        <div id="harianExcelUploadMsg" class="form-msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: REKAP & INSIGHT -->
+  <div class="content" id="tab-rekap" style="display:none;">
+    <div class="section-title">
+      📈 Rekap &amp; Insight Pelayanan
+      <div style="display:flex; gap:8px;">
+        <button class="btn-export" onclick="exportRekapToExcel()">⬇️ Ekspor ke Excel</button>
+        <button class="btn-refresh" onclick="loadRekap()">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card waiting">
+        <div class="stat-number" id="rekapTotal">0</div>
+        <div class="stat-label">📊 Total Hari Ini</div>
+      </div>
+      <div class="stat-card serving">
+        <div class="stat-number" id="rekapAvgWait">0m</div>
+        <div class="stat-label">⏱️ Rata-rata Tunggu</div>
+      </div>
+      <div class="stat-card done">
+        <div class="stat-number" id="rekapAvgRating">0</div>
+        <div class="stat-label">⭐ Rata-rata Rating</div>
+      </div>
+    </div>
+
+    <div class="card-box">
+      <div class="section-title" style="margin-bottom:10px;">Distribusi Jenis Layanan Hari Ini</div>
+      <div id="rekapPrefixBars"></div>
+    </div>
+
+    <div class="card-box" style="margin-top:16px;">
+      <div class="section-title" style="margin-bottom:10px;">Tren 7 Hari Terakhir</div>
+      <div id="rekapTrendBars"></div>
+    </div>
+
+    <div class="card-box" style="margin-top:16px;">
+      <div class="section-title" style="margin-bottom:10px;">🏆 Top Petugas Hari Ini</div>
+      <div id="rekapTopPetugas"></div>
+    </div>
+
+    <div class="card-box" style="margin-top:16px;">
+      <div class="section-title" style="margin-bottom:10px;">⭐ Rekap Rating Hari Ini</div>
+      <div id="rekapRatingList"></div>
+    </div>
+  </div>
+
+  <!-- TAB: PROFIL SAYA -->
+  <div class="content" id="tab-profil" style="display:none;">
+    <div class="section-title">👤 Profil Saya</div>
+    <div class="card-box" style="max-width:480px;">
+      <label>Nama Lengkap</label>
+      <input type="text" id="profilNama">
+      <label style="margin-top:12px;">Username</label>
+      <input type="text" id="profilUsername">
+      <label style="margin-top:12px;">Password Baru (kosongkan jika tidak ganti)</label>
+      <input type="password" id="profilPassword" placeholder="••••••••">
+      <button class="btn-primary" style="margin-top:16px;" onclick="saveProfilUI()">💾 Simpan Profil</button>
+      <div id="profilMsg" class="form-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Selesai Layani -->
+<div class="modal-overlay" id="doneModal">
+  <div class="modal-box">
+    <div class="modal-title">✅ Selesaikan Pelayanan</div>
+    <div class="modal-sub" id="doneModalSub">Isi detail pelayanan untuk pengunjung ini.</div>
+    <label>Jenis Layanan</label>
+    <select id="serviceType">
+      <option value="">— Pilih Jenis Layanan —</option>
+      <option value="A - Perpustakaan">A - Perpustakaan</option>
+      <option value="B - Konsultasi Statistik">B - Konsultasi Statistik</option>
+      <option value="C - Produk Statistik Berbayar">C - Produk Statistik Berbayar</option>
+      <option value="D - Rekomendasi Statistik">D - Rekomendasi Statistik</option>
+    </select>
+    <label>Catatan Pelayanan (opsional)</label>
+    <textarea id="serviceDetail" placeholder="Catatan atau ringkasan pelayanan..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeDoneModal()">Batal</button>
+      <button class="btn-confirm" onclick="confirmDone()">Selesaikan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Tambah/Edit Pegawai (Master Pegawai) -->
+<div class="modal-overlay" id="employeeModal">
+  <div class="modal-box">
+    <div class="modal-title" id="employeeModalTitle">➕ Tambah Pegawai</div>
+    <div class="modal-sub">Isi data pegawai di bawah ini.</div>
+    <label>Nama Lengkap</label>
+    <input type="text" id="empNama" placeholder="Nama lengkap pegawai" style="margin-bottom:14px;">
+    <label>Username</label>
+    <input type="text" id="empUsername" placeholder="username.pegawai" style="margin-bottom:14px;">
+    <label>Password <span style="font-weight:400; color:#94a3b8;">(kosongkan agar tetap/default)</span></label>
+    <input type="text" id="empPassword" placeholder="bps2025" style="margin-bottom:14px;">
+    <label>Role</label>
+    <select id="empRole" style="margin-bottom:14px;">
+      <option value="PEGAWAI">PEGAWAI (belum bertugas)</option>
+      <option value="PETUGAS">PETUGAS</option>
+      <option value="RESEPSIONIS">RESEPSIONIS</option>
+      <option value="ADMIN">ADMIN</option>
+      <option value="SUPERADMIN">SUPERADMIN</option>
+    </select>
+    <label style="display:flex; align-items:center; gap:8px; font-weight:500;">
+      <input type="checkbox" id="empIsActive" style="width:auto;" checked> Pegawai Aktif
+    </label>
+    <div class="modal-btns" style="margin-top:16px;">
+      <button class="btn-cancel" onclick="closeEmployeeModal()">Batal</button>
+      <button class="btn-confirm" onclick="saveEmployeeModal()">💾 Simpan</button>
+    </div>
+    <div id="employeeModalMsg" class="form-msg"></div>
+  </div>
+</div>
+
+<!-- MODAL: Pilih Petugas (untuk Resepsionis/Admin saat Mulai Layani) -->
+<div class="modal-overlay" id="assignModal">
+  <div class="modal-box">
+    <div class="modal-title">👤 Tugaskan Petugas</div>
+    <div class="modal-sub" id="assignModalSub">Pilih petugas on-duty untuk melayani pengunjung ini.</div>
+    <select id="assignPetugasSelect"></select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeAssignModal()">Batal</button>
+      <button class="btn-confirm" onclick="confirmAssign()">Mulai Layani</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Pilih Petugas On-Duty untuk Tanggal Tertentu (dari klik Kalender) -->
+<div class="modal-overlay" id="harianAssignModal">
+  <div class="modal-box">
+    <div class="modal-title">📅 Atur Petugas On-Duty</div>
+    <div class="modal-sub" id="harianAssignModalSub">Pilih petugas (dari roster bulan ini) yang bertugas pada tanggal ini.</div>
+    <div id="harianAssignCheckList" class="check-list"></div>
+    <div class="modal-btns" style="margin-top:14px;">
+      <button class="btn-cancel" onclick="closeHarianAssignModal()">Batal</button>
+      <button class="btn-confirm" onclick="saveHarianAssignModal()">💾 Simpan</button>
+    </div>
+    <div id="harianAssignModalMsg" class="form-msg"></div>
+  </div>
+</div>
+
+<!-- MODAL: Ping Petugas (Resepsionis/Admin pilih petugas untuk di-ping) -->
+<div class="modal-overlay" id="pingSelectModal">
+  <div class="modal-box">
+    <div class="modal-title">📣 Ping Petugas</div>
+    <div class="modal-sub" id="pingSelectModalSub">Beritahu petugas on-duty bahwa ada tamu menunggu.</div>
+    <select id="pingPetugasSelect"></select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closePingSelectModal()">Batal</button>
+      <button class="btn-confirm" onclick="confirmSendPing()">Kirim Ping</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Ping Masuk (ditampilkan ke Petugas saat di-ping Resepsionis) -->
+<div class="modal-overlay" id="pingIncomingModal">
+  <div class="modal-box">
+    <div class="ping-modal-icon">📣</div>
+    <div class="modal-title" style="text-align:center;">Ada Tamu Menunggu</div>
+    <div class="modal-sub" id="pingIncomingSub" style="text-align:center;">—</div>
+    <button class="btn-ready" onclick="respondPingReadyUI()">✅ Saya Siap Melayani</button>
+  </div>
+</div>
+
+<!-- MODAL: Tambah Petugas Pendamping (multi-petugas per tiket) -->
+<div class="modal-overlay" id="pendampingModal">
+  <div class="modal-box">
+    <div class="modal-title">🤝 Tambah Petugas Pendamping</div>
+    <div class="modal-sub" id="pendampingModalSub">Catat petugas lain yang ikut membantu melayani pengunjung ini.</div>
+    <select id="pendampingSelect"></select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closePendampingModal()">Batal</button>
+      <button class="btn-confirm" onclick="confirmAddPendamping()">Tambahkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Rating -->
+<div class="rating-modal-overlay" id="ratingModal">
+  <div class="rating-modal">
+    <div class="rating-icon">⭐</div>
+    <h3>Penilaian Pengunjung</h3>
+    <p class="rating-visitor" id="ratingVisitorName">—</p>
+    <div class="stars" id="starsRow">
+      <span class="star" data-val="1" onclick="selectStar(1)">⭐</span>
+      <span class="star" data-val="2" onclick="selectStar(2)">⭐</span>
+      <span class="star" data-val="3" onclick="selectStar(3)">⭐</span>
+      <span class="star" data-val="4" onclick="selectStar(4)">⭐</span>
+      <span class="star" data-val="5" onclick="selectStar(5)">⭐</span>
+    </div>
+    <div class="star-labels" id="starLabel">Pilih bintang untuk menilai</div>
+    <label style="text-align:left; display:block;">Dinilai untuk petugas</label>
+    <select id="ratingPetugasSelect"></select>
+    <textarea class="rating-textarea" id="ratingComment" placeholder="Komentar tambahan (opsional)..."></textarea>
+    <button class="btn-rating-submit" id="ratingSubmitBtn" onclick="submitRating()">Simpan Penilaian</button>
+    <button class="btn-rating-skip" onclick="closeRatingModal()">Lewati</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let currentUser = null;
+  let currentEntryId = null;
+  let ratingEntryId = null;
+  let assignEntryId = null;
+  let selectedRating = 0;
+  let petugasTersediaHariIni = [];
+  let employeeListCache = [];
+  // Mode Bertugas
+  let dutyModeOn = false;
+  let dutyModeScheduled = false;
+  // Ping/Ready
+  let pingEntryId = null;
+  let shownPingIds = {};
+  let shownReadyIds = {};
+  let pingPollHandle = null;
+  // Pendamping (multi-petugas)
+  let pendampingEntryId = null;
+  let lastQueueEntries = [];
+  const STAR_LABELS = ['', 'Sangat Buruk', 'Buruk', 'Cukup', 'Baik', 'Sangat Baik'];
+
+  // ── LOGIN ──
+  function doLogin() {
+    const nama = document.getElementById('loginNama').value.trim();
+    const pass = document.getElementById('loginPass').value;
+    if (!nama) { showErr('Nama tidak boleh kosong.'); return; }
+    if (!pass) { showErr('Password tidak boleh kosong.'); return; }
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span>Memverifikasi...';
+    document.getElementById('loginErr').style.display = 'none';
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res.ok) {
+          currentUser = res.user;
+          document.getElementById('loginWrap').style.display = 'none';
+          document.getElementById('dashboard').style.display = 'block';
+          document.getElementById('userName').textContent = res.user.nama;
+          document.getElementById('userInitials').textContent = res.user.nama.charAt(0).toUpperCase();
+          setupUIForRole(res.user);
+          loadQueue();
+          refreshPetugasTersedia();
+          initDutyToggle(res.user);
+          startPingPolling(res.user);
+          setInterval(loadQueue, 10000);
+          setInterval(refreshPetugasTersedia, 20000);
+        } else {
+          showErr(res.error || 'Login gagal.');
+          btn.disabled = false;
+          btn.textContent = 'Masuk';
+        }
+      })
+      .withFailureHandler(function(e) {
+        showErr('Error: ' + e.message);
+        btn.disabled = false;
+        btn.textContent = 'Masuk';
+      })
+      .loginPetugas(nama, pass);
+  }
+
+  // Sesuaikan tab & bagian yang tampil berdasarkan role pengguna
+  function setupUIForRole(user) {
+    const role = user.role;
+    const isAdmin = (role === 'ADMIN' || role === 'SUPERADMIN');
+    const isResepsionis = (role === 'RESEPSIONIS');
+    const isPetugas = (role === 'PETUGAS');
+    document.querySelector('[data-tab="master"]').style.display = isAdmin ? '' : 'none';
+    document.querySelector('[data-tab="jadwal"]').style.display = (isAdmin || isResepsionis) ? '' : 'none';
+    document.querySelector('[data-tab="rekap"]').style.display = isAdmin ? '' : 'none';
+    document.getElementById('jadwalBulananSection').style.display = isAdmin ? '' : 'none';
+    document.getElementById('importExcelSection').style.display = isAdmin ? '' : 'none';
+    document.getElementById('dutyToggleWrap').style.display = isPetugas ? 'flex' : 'none';
+  }
+
+  function refreshPetugasTersedia() {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        petugasTersediaHariIni = (res && res.data) || [];
+        renderOnDutyBanner();
+      })
+      .withFailureHandler(function() {})
+      .getPetugasTersediaHariIni(null);
+  }
+
+  // Panel "Bertugas Sekarang" — daftar petugas yang jadwalnya aktif hari ini DAN Mode
+  // Bertugas-nya sedang ON (bukan sekadar terjadwal). Terlihat oleh semua role, supaya
+  // Resepsionis/Petugas lain langsung tahu siapa yang bisa ditugaskan/di-ping saat ini.
+  function renderOnDutyBanner() {
+    const el = document.getElementById('onDutyChips');
+    if (!el) return;
+    if (!petugasTersediaHariIni || petugasTersediaHariIni.length === 0) {
+      el.innerHTML = '<span style="font-size:12px; color:var(--text-faint);">Belum ada petugas aktif saat ini</span>';
+      return;
+    }
+    el.innerHTML = petugasTersediaHariIni.map(function(p) {
+      return '<span class="onduty-chip"><span class="dot"></span>' + escHtml(p.nama) + '</span>';
+    }).join('');
+  }
+
+  // Panel status pribadi untuk role PETUGAS: Mode Bertugas + jumlah pengunjung yang sudah
+  // dilayani hari ini (dihitung dari entries yang sudah dimuat loadQueue()).
+  function renderMyStatusBanner() {
+    const banner = document.getElementById('myStatusBanner');
+    if (!currentUser || currentUser.role !== 'PETUGAS') { banner.style.display = 'none'; return; }
+    banner.style.display = 'block';
+    const servedByMe = (lastQueueEntries || []).filter(function(e) {
+      return e.status === 'DONE' && String(e.petugas || '').toLowerCase() === currentUser.nama.toLowerCase();
+    });
+    document.getElementById('myServedCount').textContent = servedByMe.length;
+    let statusTxt;
+    if (!dutyModeScheduled) statusTxt = 'Anda tidak terjadwal bertugas hari ini.';
+    else if (dutyModeOn) statusTxt = '🟢 Mode Bertugas aktif — Anda bisa menerima antrian & ping.';
+    else statusTxt = '⏸️ Mode Bertugas non-aktif — nyalakan toggle di pojok atas untuk mulai menerima antrian.';
+    document.getElementById('myStatusText').textContent = statusTxt + ' Pengunjung dilayani hari ini:';
+  }
+
+  function isPetugasOnDutyToday() {
+    if (!currentUser) return false;
+    return petugasTersediaHariIni.some(function(p) {
+      return p.id === currentUser.id || (p.nama && p.nama.toLowerCase() === currentUser.nama.toLowerCase());
+    });
+  }
+
+  function showErr(msg) {
+    const el = document.getElementById('loginErr');
+    el.textContent = msg; el.style.display = 'block';
+  }
+
+  function doLogout() {
+    currentUser = null;
+    if (pingPollHandle) { clearInterval(pingPollHandle); pingPollHandle = null; }
+    shownPingIds = {}; shownReadyIds = {};
+    dutyModeOn = false; dutyModeScheduled = false;
+    document.getElementById('dutyToggleWrap').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('loginWrap').style.display = 'flex';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginBtn').disabled = false;
+    document.getElementById('loginBtn').textContent = 'Masuk';
+    switchTab('antrian');
+  }
+
+  // ── TAB NAVIGATION ──
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.tab === tab); });
+    ['antrian', 'master', 'jadwal', 'rekap', 'profil'].forEach(function(t) {
+      document.getElementById('tab-' + t).style.display = (t === tab) ? 'block' : 'none';
+    });
+    if (tab === 'master') loadMasterPegawaiUI();
+    if (tab === 'jadwal') loadJadwalUI();
+    if (tab === 'rekap') loadRekap();
+    if (tab === 'profil') loadProfilUI();
+  }
+
+  // ── QUEUE ──
+  function purposeLabel(p) {
+    return { PST:'Konsultasi PST', RAPAT:'Rapat/Kerjasama', LAINNYA:'Lainnya' }[p] || p || '—';
+  }
+  function purposeClass(p) {
+    return { PST:'purpose-pst', RAPAT:'purpose-rapat', LAINNYA:'purpose-lainnya' }[p] || 'purpose-lainnya';
+  }
+
+  function loadQueue() {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (!res || !res.ok) return;
+        const entries = res.entries;
+        lastQueueEntries = entries;
+        renderMyStatusBanner();
+        const waiting  = entries.filter(e => e.status === 'WAITING');
+        const serving  = entries.filter(e => e.status === 'IN_SERVICE');
+        const done     = entries.filter(e => e.status === 'DONE');
+        document.getElementById('statWaiting').textContent = waiting.length;
+        document.getElementById('statServing').textContent = serving.length;
+        document.getElementById('statDone').textContent = done.length;
+
+        if (entries.length === 0) {
+          document.getElementById('queueList').innerHTML =
+            '<div class="empty-state"><div class="ei">📭</div><p>Belum ada antrian hari ini</p></div>';
+          return;
+        }
+
+        const html = entries.map(e => {
+          const sClass = 'status-' + e.status.toLowerCase();
+          const isFrontDesk = currentUser && (currentUser.role === 'RESEPSIONIS' || currentUser.role === 'ADMIN' || currentUser.role === 'SUPERADMIN');
+          // Hanya role operasional (Petugas/Resepsionis/Admin/Superadmin) yang boleh memproses
+          // antrian. Role PEGAWAI (default hasil Sinkronisasi Wawai API / pegawai baru yang
+          // belum diberi peran) hanya bisa melihat, sampai Admin mengedit Role-nya lewat
+          // tab Master Pegawai.
+          const isOperationalRole = currentUser && (currentUser.role === 'PETUGAS' || isFrontDesk);
+          let actions = '';
+          if (!isOperationalRole) {
+            actions = '<div class="not-scheduled-note">Akun Anda (' + escHtml(currentUser ? currentUser.role : '-') + ') belum berperan sebagai Petugas/Resepsionis. Hubungi Admin untuk mengubah Role.</div>';
+          } else if (e.status === 'WAITING') {
+            if (currentUser.role === 'PETUGAS' && !isPetugasOnDutyToday()) {
+              actions = '<div class="not-scheduled-note">Anda tidak terjadwal hari ini</div>';
+            } else {
+              actions = '<button class="btn-action btn-start" data-action="start" data-id="' + escAttr(e.id) + '" data-name="' + escAttr(e.visitorName) + '" data-purpose="' + escAttr(e.purpose) + '">Mulai Layani</button>';
+              if (isFrontDesk && e.purpose === 'PST') {
+                actions += '<div class="card-actions-secondary"><button class="btn-chip btn-ping" data-action="ping" data-id="' + escAttr(e.id) + '" data-ticket="' + escAttr(e.ticket) + '" data-name="' + escAttr(e.visitorName) + '">📣 Ping</button></div>';
+              }
+            }
+          } else if (e.status === 'IN_SERVICE') {
+            actions = '<button class="btn-action btn-done" data-action="done" data-id="' + escAttr(e.id) + '" data-name="' + escAttr(e.visitorName) + '">Selesai</button>' +
+              '<div class="card-actions-secondary">' +
+              '<button class="btn-chip btn-recall" data-action="recall" data-id="' + escAttr(e.id) + '">🔁 Ulang</button>' +
+              '<button class="btn-chip btn-pendamping" data-action="pendamping" data-id="' + escAttr(e.id) + '" data-name="' + escAttr(e.visitorName) + '">🤝 Pendamping</button>' +
+              '</div>';
+          } else if (e.status === 'DONE') {
+            actions = e.rating
+              ? `<span class="rating-badge">⭐ ${e.rating}/5</span>`
+              : '<button class="btn-action" style="background:#fef3c7;color:#b45309;font-size:12px;" data-action="rate" data-id="' + escAttr(e.id) + '" data-name="' + escAttr(e.visitorName) + '">Beri Nilai</button>';
+          }
+          const contactBits = [];
+          if (e.noHp) contactBits.push('📞 ' + escHtml(e.noHp));
+          if (e.email) contactBits.push('✉️ ' + escHtml(e.email));
+          const collabHtml = (e.collaborators && e.collaborators.length > 0)
+            ? '<div style="margin-top:6px;">' + e.collaborators.map(function(c) { return '<span class="collab-chip">🤝 ' + escHtml(c) + '</span>'; }).join('') + '</div>'
+            : '';
+          return `
+            <div class="queue-card ${sClass}">
+              <div class="ticket-box">${e.ticket}</div>
+              <div class="card-info">
+                <div class="visitor-name">${escHtml(e.visitorName)}</div>
+                <div class="visitor-meta">${e.visitorCount} orang${e.addressInstansi ? ' · ' + escHtml(e.addressInstansi) : ''}</div>
+                ${contactBits.length ? `<div class="visitor-meta" style="margin-top:2px;">${contactBits.join(' · ')}</div>` : ''}
+                ${e.visitDetail ? `<div class="visitor-meta" style="margin-top:2px;">📝 ${escHtml(e.visitDetail)}</div>` : ''}
+                <span class="visitor-purpose ${purposeClass(e.purpose)}">${purposeLabel(e.purpose)}</span>
+                ${e.serviceType ? `<div class="visitor-meta" style="margin-top:4px;">🔧 ${escHtml(e.serviceType)}${e.serviceDetail ? ' — ' + escHtml(e.serviceDetail) : ''}</div>` : ''}
+                ${collabHtml}
+              </div>
+              <div class="card-actions">${actions}</div>
+            </div>`;
+        }).join('');
+        document.getElementById('queueList').innerHTML = html;
+        attachQueueActionListeners();
+      })
+      .withFailureHandler(function() {})
+      .getQueueToday();
+  }
+
+  // ── Escaping helpers (mencegah karakter kutip/HTML merusak rendering) ──
+  function escAttr(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function escHtml(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // ── Pasang event listener untuk tombol aksi (pengganti onclick inline) ──
+  function attachQueueActionListeners() {
+    document.querySelectorAll('[data-action="start"]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        startService(this.dataset.id, this.dataset.name, this.dataset.purpose);
+      });
+    });
+    document.querySelectorAll('[data-action="done"]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        openDoneModal(this.dataset.id, this.dataset.name);
+      });
+    });
+    document.querySelectorAll('[data-action="rate"]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        openRatingModal(this.dataset.id, this.dataset.name);
+      });
+    });
+    document.querySelectorAll('[data-action="recall"]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        recallEntry(this.dataset.id);
+      });
+    });
+    document.querySelectorAll('[data-action="ping"]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        openPingSelectModal(this.dataset.id, this.dataset.ticket, this.dataset.name);
+      });
+    });
+    document.querySelectorAll('[data-action="pendamping"]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        openPendampingModal(this.dataset.id, this.dataset.name);
+      });
+    });
+  }
+
+  // ── START SERVICE (role-aware) ──
+  // PETUGAS: langsung mulai layani (kalau memang terjadwal hari ini).
+  // RESEPSIONIS/ADMIN/SUPERADMIN + tujuan PST: buka modal untuk memilih petugas on-duty.
+  // RESEPSIONIS/ADMIN/SUPERADMIN + tujuan RAPAT/LAINNYA: langsung dilayani sendiri tanpa perlu pilih petugas.
+  function startService(entryId, visitorName, purpose) {
+    const isNonPST = purpose && purpose !== 'PST';
+    const isFrontDesk = currentUser && (currentUser.role === 'RESEPSIONIS' || currentUser.role === 'ADMIN' || currentUser.role === 'SUPERADMIN');
+
+    if (!currentUser || !(currentUser.role === 'PETUGAS' || isFrontDesk)) {
+      showToast('⚠️ Akun Anda belum berperan sebagai Petugas/Resepsionis.', '#f59e0b');
+      return;
+    }
+
+    if (currentUser && currentUser.role === 'PETUGAS') {
+      if (!isPetugasOnDutyToday()) {
+        showToast('⚠️ Anda tidak dijadwalkan bertugas hari ini.', '#f59e0b');
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res.ok) { showToast('✅ Mulai melayani ' + visitorName, '#10b981'); loadQueue(); }
+          else showToast('❌ ' + res.error, '#ef4444');
+        })
+        .withFailureHandler(function(e) { showToast('❌ ' + e.message, '#ef4444'); })
+        .updateQueueStatus(entryId, 'IN_SERVICE', currentUser.nama, null, null);
+    } else if (isFrontDesk && isNonPST) {
+      // Rapat/Lainnya: resepsionis/admin layani langsung, tidak perlu menugaskan petugas
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res.ok) { showToast('✅ Mulai melayani ' + visitorName, '#10b981'); loadQueue(); }
+          else showToast('❌ ' + res.error, '#ef4444');
+        })
+        .withFailureHandler(function(e) { showToast('❌ ' + e.message, '#ef4444'); })
+        .updateQueueStatus(entryId, 'IN_SERVICE', currentUser.nama, null, null);
+    } else {
+      openAssignModal(entryId, visitorName);
+    }
+  }
+
+  // ── ASSIGN MODAL (pilih petugas on-duty) ──
+  function openAssignModal(entryId, visitorName) {
+    assignEntryId = entryId;
+    document.getElementById('assignModalSub').textContent = 'Pengunjung: ' + visitorName;
+    const sel = document.getElementById('assignPetugasSelect');
+    if (!petugasTersediaHariIni || petugasTersediaHariIni.length === 0) {
+      sel.innerHTML = '<option value="">— Tidak ada petugas on-duty hari ini —</option>';
+    } else {
+      sel.innerHTML = '<option value="">— Pilih Petugas —</option>' +
+        petugasTersediaHariIni.map(function(p) { return '<option value="' + escAttr(p.nama) + '">' + escHtml(p.nama) + '</option>'; }).join('');
+    }
+    document.getElementById('assignModal').classList.add('show');
+  }
+  function closeAssignModal() {
+    document.getElementById('assignModal').classList.remove('show');
+    assignEntryId = null;
+  }
+  function confirmAssign() {
+    const petugasNama = document.getElementById('assignPetugasSelect').value;
+    if (!petugasNama) { showToast('⚠️ Pilih petugas terlebih dahulu!', '#f59e0b'); return; }
+    const entryId = assignEntryId;
+    google.script.run
+      .withSuccessHandler(function(res) {
+        closeAssignModal();
+        if (res.ok) { showToast('✅ Ditugaskan ke ' + petugasNama, '#10b981'); loadQueue(); }
+        else showToast('❌ ' + res.error, '#ef4444');
+      })
+      .withFailureHandler(function(e) { showToast('❌ ' + e.message, '#ef4444'); })
+      .updateQueueStatus(entryId, 'IN_SERVICE', petugasNama, null, null);
+  }
+
+  // ── PANGGIL ULANG ──
+  function recallEntry(entryId) {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res.ok) showToast('🔔 Berhasil memanggil ulang', '#f59e0b');
+        else showToast('❌ ' + res.error, '#ef4444');
+      })
+      .withFailureHandler(function(e) { showToast('❌ ' + e.message, '#ef4444'); })
+      .recallQueue(entryId);
+  }
+
+  // ════════════════════════════════════════════════════════
+  // MODE BERTUGAS (toggle mandiri Petugas)
+  // ════════════════════════════════════════════════════════
+  function initDutyToggle(user) {
+    if (!user || user.role !== 'PETUGAS') return;
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (!res || !res.ok) return;
+        dutyModeScheduled = !!res.scheduled;
+        dutyModeOn = !!res.isOn;
+        renderDutySwitch();
+      })
+      .withFailureHandler(function() {})
+      .getMyDutyModeToday(user.id);
+  }
+  function renderDutySwitch() {
+    const sw = document.getElementById('dutySwitch');
+    const label = document.getElementById('dutyToggleLabel');
+    sw.classList.toggle('on', dutyModeOn);
+    if (!dutyModeScheduled) {
+      label.textContent = 'Tidak Terjadwal';
+    } else {
+      label.textContent = dutyModeOn ? 'Sedang Bertugas' : 'Non-Aktif Sementara';
+    }
+    renderMyStatusBanner();
+  }
+  function toggleDutyMode() {
+    if (!currentUser || !dutyModeScheduled) {
+      showToast('⚠️ Anda belum terjadwal hari ini, tidak bisa mengubah Mode Bertugas.', '#f59e0b');
+      return;
+    }
+    const newVal = !dutyModeOn;
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res.ok) {
+          dutyModeOn = res.isOn;
+          renderDutySwitch();
+          showToast(dutyModeOn ? '✅ Mode Bertugas aktif' : '⏸️ Mode Bertugas non-aktif sementara', dutyModeOn ? '#10b981' : '#f59e0b');
+          refreshPetugasTersedia();
+        } else {
+          showToast('❌ ' + res.error, '#ef4444');
+        }
+      })
+      .withFailureHandler(function(e) { showToast('❌ ' + e.message, '#ef4444'); })
+      .setDutyModeToggle(null, currentUser.id, newVal);
+  }
+
+  // ════════════════════════════════════════════════════════
+  // PING / READY (Resepsionis ⇄ Petugas)
+  // ════════════════════════════════════════════════════════
+  function openPingSelectModal(entryId, ticket, name) {
+    pingEntryId = { id: entryId, ticket: ticket, name: name };
+    document.getElementById('pingSelectModalSub').textContent = 'Tiket ' + ticket + ' — ' + name;
+    const sel = document.getElementById('pingPetugasSelect');
+    if (!petugasTersediaHariIni || petugasTersediaHariIni.length === 0) {
+      sel.innerHTML = '<option value="">— Tidak ada petugas on-duty hari ini —</option>';
+    } else {
+      sel.innerHTML = '<option value="">— Pilih Petugas —</option>' +
+        petugasTersediaHariIni.map(function(p) { return '<option value="' + escAttr(p.id) + '" data-nama="' + escAttr(p.nama) + '">' + escHtml(p.nama) + '</option>'; }).join('');
+    }
+    document.getElementById('pingSelectModal').classList.add('show');
+  }
+  function closePingSelectModal() {
+    document.getElementById('pingSelectModal').classList.remove('show');
+    pingEntryId = null;
+  }
+  function confirmSendPing() {
+    const sel = document.getElementById('pingPetugasSelect');
+    const petugasId = sel.value;
+    if (!petugasId) { showToast('⚠️ Pilih petugas terlebih dahulu!', '#f59e0b'); return; }
+    const petugasNama = sel.options[sel.selectedIndex].dataset.nama;
+    const info = pingEntryId;
+    google.script.run
+      .withSuccessHandler(function(res) {
+        closePingSelectModal();
+        if (res.ok) showToast('📣 Ping terkirim ke ' + petugasNama, '#0ea5e9');
+        else showToast('❌ ' + res.error, '#ef4444');
+      })
+      .withFailureHandler(function(e) { showToast('❌ ' + e.message, '#ef4444'); })
+      .sendPing(info.id, info.ticket, info.name, currentUser.nama, petugasId, petugasNama);
+  }
+
+  // Polling: petugas memantau ping masuk; resepsionis/admin memantau balasan READY.
+  function startPingPolling(user) {
+    if (!user) return;
+    if (user.role === 'PETUGAS') {
+      pollPendingPings();
+      pingPollHandle = setInterval(pollPendingPings, 4000);
+    } else if (user.role === 'RESEPSIONIS' || user.role === 'ADMIN' || user.role === 'SUPERADMIN') {
+      pollReadyResponses();
+      pingPollHandle = setInterval(pollReadyResponses, 4000);
+    }
+  }
+  function pollPendingPings() {
+    if (!currentUser || document.getElementById('pingIncomingModal').classList.contains('show')) return;
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (!res || !res.ok) return;
+        const fresh = (res.data || []).find(function(p) { return !shownPingIds[p.id]; });
+        if (fresh) { shownPingIds[fresh.id] = true; showIncomingPingModal(fresh); }
+      })
+      .withFailureHandler(function() {})
+      .getPendingPingsForPetugas(currentUser.id, currentUser.nama);
+  }
+  function showIncomingPingModal(ping) {
+    pingEntryId = ping;
+    document.getElementById('pingIncomingSub').textContent =
+      'Tiket ' + ping.ticket + ' — ' + ping.visitorName + (ping.fromNama ? ' (diping oleh ' + ping.fromNama + ')' : '');
+    document.getElementById('pingIncomingModal').classList.add('show');
+  }
+  function respondPingReadyUI() {
+    if (!pingEntryId) return;
+    const id = pingEntryId.id;
+    google.script.run
+      .withSuccessHandler(function(res) {
+        document.getElementById('pingIncomingModal').classList.remove('show');
+        if (res.ok) showToast('✅ Anda menandai siap melayani', '#10b981');
+        else showToast('❌ ' + res.error, '#ef4444');
+        pingEntryId = null;
+      })
+      .withFailureHandler(function(e) {
+        document.getElementById('pingIncomingModal').classList.remove('show');
+        showToast('❌ ' + e.message, '#ef4444');
+        pingEntryId = null;
+      })
+      .respondPingReady(id, currentUser.nama);
+  }
+  function pollReadyResponses() {
+    if (!currentUser) return;
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (!res || !res.ok) return;
+        (res.data || []).forEach(function(item) {
+          if (!shownReadyIds[item.id]) {
+            shownReadyIds[item.id] = true;
+            showToast('✅ ' + item.toPetugasNama + ' siap melayani ' + item.visitorName + ' (' + item.ticket + ')', '#10b981');
+          }
+        });
+      })
+      .withFailureHandler(function() {})
+      .getReadyPingsForResepsionis(currentUser.nama);
+  }
+
+  // ════════════════════════════════════════════════════════
+  // MULTI-PETUGAS (Tambah Petugas Pendamping)
+  // ════════════════════════════════════════════════════════
+  function openPendampingModal(entryId, name) {
+    pendampingEntryId = entryId;
+    document.getElementById('pendampingModalSub').textContent = 'Pengunjung: ' + name;
+    const sel = document.getElementById('pendampingSelect');
+    if (!petugasTersediaHariIni || petugasTersediaHariIni.length === 0) {
+      sel.innerHTML = '<option value="">— Tidak ada petugas on-duty hari ini —</option>';
+    } else {
+      sel.innerHTML = '<option value="">— Pilih Petugas Pendamping —</option>' +
+        petugasTersediaHariIni.map(function(p) { return '<option value="' + escAttr(p.id) + '" data-nama="' + escAttr(p.nama) + '">' + escHtml(p.nama) + '</option>'; }).join('');
+    }
+    document.getElementById('pendampingModal').classList.add('show');
+  }
+  function closePendampingModal() {
+    document.getElementById('pendampingModal').classList.remove('show');
+    pendampingEntryId = null;
+  }
+  function confirmAddPendamping() {
+    const sel = document.getElementById('pendampingSelect');
+    const petugasId = sel.value;
+    if (!petugasId) { showToast('⚠️ Pilih petugas terlebih dahulu!', '#f59e0b'); return; }
+    const petugasNama = sel.options[sel.selectedIndex].dataset.nama;
+    const entryId = pendampingEntryId;
+    google.script.run
+      .withSuccessHandler(function(res) {
+        closePendampingModal();
+        if (res.ok) { showToast('🤝 ' + petugasNama + ' ditambahkan sebagai pendamping', '#10b981'); loadQueue(); }
+        else showToast('❌ ' + res.error, '#ef4444');
+      })
+      .withFailureHandler(function(e) { showToast('❌ ' + e.message, '#ef4444'); })
+      .joinServiceLog(entryId, petugasId, petugasNama);
+  }
+
+  // ── DONE MODAL ──
+  function openDoneModal(entryId, visitorName) {
+    currentEntryId = entryId;
+    document.getElementById('doneModalSub').textContent = 'Pelayanan untuk: ' + visitorName;
+    document.getElementById('serviceType').value = '';
+    document.getElementById('serviceDetail').value = '';
+    document.getElementById('doneModal').classList.add('show');
+  }
+  function closeDoneModal() {
+    document.getElementById('doneModal').classList.remove('show');
+    currentEntryId = null;
+  }
+
+  function confirmDone() {
+    if (!currentEntryId) return;
+    const sType = document.getElementById('serviceType').value;
+    const sDetail = document.getElementById('serviceDetail').value.trim();
+    const visitorName = document.getElementById('doneModalSub').textContent.replace('Pelayanan untuk: ', '');
+    const entryId = currentEntryId;
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        closeDoneModal();
+        if (res.ok) {
+          showToast('✅ Pelayanan selesai!', '#10b981');
+          loadQueue();
+          setTimeout(() => openRatingModal(entryId, visitorName), 600);
+        } else {
+          showToast('❌ ' + res.error, '#ef4444');
+        }
+      })
+      .withFailureHandler(function(e) { showToast('❌ ' + e.message, '#ef4444'); })
+      .updateQueueStatus(entryId, 'DONE', currentUser ? currentUser.nama : 'Petugas', sType || null, sDetail || null);
+  }
+
+  // ── RATING MODAL ──
+  function openRatingModal(entryId, visitorName) {
+    ratingEntryId = entryId;
+    selectedRating = 0;
+    document.getElementById('ratingVisitorName').textContent = visitorName;
+    document.getElementById('ratingComment').value = '';
+    document.getElementById('starLabel').textContent = 'Pilih bintang untuk menilai';
+    document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+
+    // Daftar petugas yang bisa dinilai: petugas tercatat di tiket + pendamping (multi-petugas)
+    // + seluruh petugas yang sedang bertugas hari ini — berlaku untuk semua jenis kunjungan
+    // (PST maupun Rapat/Lainnya), tidak dikunci otomatis ke satu nama saja.
+    const entry = (lastQueueEntries || []).find(function(x) { return x.id === entryId; });
+    const names = [];
+    if (entry && entry.petugas) names.push(entry.petugas);
+    if (entry && entry.collaborators) {
+      entry.collaborators.forEach(function(c) { if (names.indexOf(c) === -1) names.push(c); });
+    }
+    (petugasTersediaHariIni || []).forEach(function(p) { if (names.indexOf(p.nama) === -1) names.push(p.nama); });
+
+    const sel = document.getElementById('ratingPetugasSelect');
+    sel.innerHTML = names.length
+      ? names.map(function(n) { return '<option value="' + escAttr(n) + '">' + escHtml(n) + '</option>'; }).join('')
+      : '<option value="">— Tidak ada petugas —</option>';
+
+    document.getElementById('ratingModal').classList.add('show');
+  }
+  function closeRatingModal() {
+    document.getElementById('ratingModal').classList.remove('show');
+    ratingEntryId = null;
+  }
+  function selectStar(val) {
+    selectedRating = val;
+    document.getElementById('starLabel').textContent = STAR_LABELS[val];
+    document.querySelectorAll('.star').forEach(s => {
+      s.classList.toggle('active', parseInt(s.dataset.val) <= val);
+    });
+  }
+  function submitRating() {
+    if (!ratingEntryId || selectedRating === 0) {
+      showToast('⚠️ Pilih bintang terlebih dahulu!', '#f59e0b'); return;
+    }
+    const comment = document.getElementById('ratingComment').value.trim();
+    const petugasDinilai = document.getElementById('ratingPetugasSelect').value;
+    const entryId = ratingEntryId;
+    const btn = document.getElementById('ratingSubmitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading"></span>Menyimpan...';
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        closeRatingModal();
+        btn.disabled = false;
+        btn.textContent = 'Simpan Penilaian';
+        if (res.ok) {
+          showToast('⭐ Penilaian berhasil disimpan!', '#f59e0b');
+          loadQueue();
+        } else {
+          showToast('❌ ' + res.error, '#ef4444');
+        }
+      })
+      .withFailureHandler(function(e) {
+        btn.disabled = false;
+        btn.textContent = 'Simpan Penilaian';
+        showToast('❌ ' + e.message, '#ef4444');
+      })
+      .submitRatingWithPetugas(entryId, selectedRating, comment, petugasDinilai);
+  }
+
+  // ════════════════════════════════════════════════════════
+  // TAB: JADWAL (Bulanan & Harian)
+  // ════════════════════════════════════════════════════════
+  function currentYYYYMM() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+  function todayYYYYMMDD() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  let selectedPetugas = [];       // [{id,nama}] pilihan petugas bulan berjalan (state lokal, tahan filter pencarian)
+  let selectedResepsionis = null; // {id,nama} atau null
+  let calendarPeriode = null;     // "yyyy-MM" bulan yang sedang ditampilkan di kalender
+  let calendarDataCache = {};     // { "yyyy-MM-dd": [{id,nama}, ...] }
+
+  function loadJadwalUI() {
+    const periodeInput = document.getElementById('periodeInput');
+    const tanggalInput = document.getElementById('tanggalHarianInput');
+    if (!periodeInput.value) periodeInput.value = currentYYYYMM();
+    if (!tanggalInput.value) tanggalInput.value = todayYYYYMMDD();
+    if (!calendarPeriode) calendarPeriode = periodeInput.value;
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        employeeListCache = (res && res.data) || [];
+        if (currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'SUPERADMIN')) {
+          fetchJadwalBulananForPeriode();
+        }
+        renderJadwalHarianUI();
+        renderCalendar();
+      })
+      .withFailureHandler(function() {})
+      .getEmployeeList();
+  }
+
+  function onPeriodeInputChange() {
+    fetchJadwalBulananForPeriode();
+  }
+
+  // Ambil roster bulanan dari server → jadi state awal (baseline) untuk periode yg dipilih
+  function fetchJadwalBulananForPeriode() {
+    const periode = document.getElementById('periodeInput').value || currentYYYYMM();
+    google.script.run
+      .withSuccessHandler(function(res) {
+        selectedPetugas = (res.petugas || []).map(function(p) { return { id: p.id, nama: p.nama }; });
+        selectedResepsionis = res.resepsionis ? { id: res.resepsionis.id, nama: res.resepsionis.nama } : null;
+        renderJadwalBulananUI();
+      })
+      .withFailureHandler(function() {})
+      .getJadwalBulanan(periode);
+  }
+
+  // Render ulang checklist dari state lokal (selectedPetugas/selectedResepsionis), difilter oleh kotak pencarian.
+  // Mengetik di kotak pencarian TIDAK menghapus pilihan yang sedang tersembunyi karena filter.
+  function renderJadwalBulananUI() {
+    const search = (document.getElementById('jadwalSearchInput').value || '').toLowerCase().trim();
+    const filtered = employeeListCache.filter(function(emp) {
+      if (!search) return true;
+      return emp.nama.toLowerCase().indexOf(search) !== -1 || emp.username.toLowerCase().indexOf(search) !== -1;
+    });
+
+    if (filtered.length === 0) {
+      const note = '<p style="font-size:12px;color:#94a3b8;">Tidak ada pegawai ditemukan untuk pencarian ini.</p>';
+      document.getElementById('petugasCheckList').innerHTML = note;
+      document.getElementById('resepsionisCheckList').innerHTML = note;
+      return;
+    }
+
+    document.getElementById('petugasCheckList').innerHTML = filtered.map(function(emp) {
+      const checked = selectedPetugas.some(function(p) { return p.id === emp.id; }) ? 'checked' : '';
+      return '<div class="check-item"><input type="checkbox" class="petugas-check" value="' + escAttr(emp.id) + '" data-nama="' + escAttr(emp.nama) + '" ' + checked + '><label>' + escHtml(emp.nama) + ' <span style="color:#94a3b8;">(' + escHtml(emp.username) + ')</span></label></div>';
+    }).join('');
+    document.querySelectorAll('.petugas-check').forEach(function(cb) {
+      cb.addEventListener('change', function() { onCheckPetugas(this); });
+    });
+
+    document.getElementById('resepsionisCheckList').innerHTML = filtered.map(function(emp) {
+      const checked = selectedResepsionis && selectedResepsionis.id === emp.id ? 'checked' : '';
+      return '<div class="check-item"><input type="radio" name="resepsionisPick" value="' + escAttr(emp.id) + '" data-nama="' + escAttr(emp.nama) + '" ' + checked + '><label>' + escHtml(emp.nama) + ' <span style="color:#94a3b8;">(' + escHtml(emp.username) + ')</span></label></div>';
+    }).join('');
+    document.querySelectorAll('input[name="resepsionisPick"]').forEach(function(rb) {
+      rb.addEventListener('change', function() { onCheckResepsionis(this); });
+    });
+  }
+
+  function onCheckPetugas(cb) {
+    if (cb.checked) {
+      if (selectedPetugas.length >= 3) {
+        cb.checked = false;
+        showToast('⚠️ Maksimal 3 petugas per bulan.', '#f59e0b');
+        return;
+      }
+      selectedPetugas.push({ id: cb.value, nama: cb.dataset.nama });
+    } else {
+      selectedPetugas = selectedPetugas.filter(function(p) { return p.id !== cb.value; });
+    }
+  }
+  function onCheckResepsionis(radio) {
+    selectedResepsionis = radio.checked ? { id: radio.value, nama: radio.dataset.nama } : null;
+  }
+
+  function saveJadwalBulananUI() {
+    const periode = document.getElementById('periodeInput').value;
+    if (!periode) { setFormMsg('jadwalBulananMsg', 'Pilih periode dulu.', false); return; }
+    google.script.run
+      .withSuccessHandler(function(res) {
+        setFormMsg('jadwalBulananMsg', res.ok ? res.message : res.error, res.ok);
+        renderCalendar();
+      })
+      .withFailureHandler(function(e) { setFormMsg('jadwalBulananMsg', e.message, false); })
+      .saveJadwalBulanan(periode, selectedPetugas, selectedResepsionis);
+  }
+
+  function renderJadwalHarianUI() {
+    const tanggal = document.getElementById('tanggalHarianInput').value || todayYYYYMMDD();
+    const periode = tanggal.substring(0, 7);
+
+    google.script.run
+      .withSuccessHandler(function(bulanan) {
+        const roster = bulanan.petugas || [];
+        google.script.run
+          .withSuccessHandler(function(harian) {
+            const onDutyIds = (harian.data || []).map(function(h) { return h.id; });
+            const html = roster.map(function(p) {
+              const checked = onDutyIds.indexOf(p.id) !== -1 ? 'checked' : '';
+              return '<div class="check-item"><input type="checkbox" class="harian-check" value="' + escAttr(p.id) + '" data-nama="' + escAttr(p.nama) + '" ' + checked + '><label>' + escHtml(p.nama) + '</label></div>';
+            }).join('');
+            document.getElementById('harianCheckList').innerHTML = html || '<p style="font-size:12px;color:#94a3b8;">Belum ada roster petugas untuk periode ini. Minta admin mengatur Jadwal Bulanan dulu.</p>';
+          })
+          .withFailureHandler(function() {})
+          .getJadwalHarian(tanggal);
+      })
+      .withFailureHandler(function() {})
+      .getJadwalBulanan(periode);
+  }
+
+  function saveJadwalHarianUI() {
+    const tanggal = document.getElementById('tanggalHarianInput').value;
+    if (!tanggal) { setFormMsg('jadwalHarianMsg', 'Pilih tanggal dulu.', false); return; }
+    const list = Array.from(document.querySelectorAll('.harian-check:checked')).map(function(cb) {
+      return { id: cb.value, nama: cb.dataset.nama };
+    });
+    google.script.run
+      .withSuccessHandler(function(res) {
+        setFormMsg('jadwalHarianMsg', res.ok ? res.message : res.error, res.ok);
+        refreshPetugasTersedia();
+        renderCalendar();
+      })
+      .withFailureHandler(function(e) { setFormMsg('jadwalHarianMsg', e.message, false); })
+      .saveJadwalHarian(tanggal, list, currentUser ? currentUser.nama : '');
+  }
+
+  // ── KALENDER ROTASI PETUGAS ──
+  function shiftPeriode(periode, delta) {
+    const parts = periode.split('-');
+    let y = parseInt(parts[0], 10), m = parseInt(parts[1], 10) - 1;
+    m += delta;
+    if (m < 0) { m = 11; y--; }
+    if (m > 11) { m = 0; y++; }
+    return y + '-' + String(m + 1).padStart(2, '0');
+  }
+  function calendarPrevMonth() {
+    calendarPeriode = shiftPeriode(calendarPeriode || currentYYYYMM(), -1);
+    renderCalendar();
+  }
+  function calendarNextMonth() {
+    calendarPeriode = shiftPeriode(calendarPeriode || currentYYYYMM(), 1);
+    renderCalendar();
+  }
+  function renderCalendar() {
+    if (!calendarPeriode) calendarPeriode = currentYYYYMM();
+    const parts = calendarPeriode.split('-');
+    const year = parseInt(parts[0], 10), month = parseInt(parts[1], 10) - 1;
+    const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    document.getElementById('calendarMonthLabel').textContent = monthNames[month] + ' ' + year;
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        calendarDataCache = (res && res.data) || {};
+        buildCalendarGrid(year, month);
+      })
+      .withFailureHandler(function() {
+        calendarDataCache = {};
+        buildCalendarGrid(year, month);
+      })
+      .getJadwalHarianBulan(calendarPeriode);
+  }
+  function buildCalendarGrid(year, month) {
+    const grid = document.getElementById('calendarGrid');
+    const dowLabels = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+    let html = dowLabels.map(function(d) { return '<div class="cal-dow">' + d + '</div>'; }).join('');
+
+    const firstDay = new Date(year, month, 1);
+    let startOffset = firstDay.getDay() - 1; // Senin = 0
+    if (startOffset < 0) startOffset = 6;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayStr2 = todayYYYYMMDD();
+    const selectedDate = document.getElementById('tanggalHarianInput').value;
+
+    for (let i = 0; i < startOffset; i++) html += '<div class="cal-day empty"></div>';
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      const names = (calendarDataCache[dateStr] || []).map(function(p) { return p.nama; });
+      let namesHtml = '';
+      if (names.length > 0) {
+        const shown = names.slice(0, 2).map(escHtml).join(', ');
+        namesHtml = '<div class="cal-day-names">' + shown + (names.length > 2 ? ' <span class="cal-more">+' + (names.length - 2) + '</span>' : '') + '</div>';
+      }
+      const classes = ['cal-day'];
+      if (dateStr === todayStr2) classes.push('today');
+      if (dateStr === selectedDate) classes.push('selected');
+      html += '<div class="' + classes.join(' ') + '" data-date="' + dateStr + '"><div class="cal-day-num">' + day + '</div>' + namesHtml + '</div>';
+    }
+    grid.innerHTML = html;
+    grid.querySelectorAll('.cal-day[data-date]').forEach(function(el) {
+      el.addEventListener('click', function() { selectCalendarDay(this.dataset.date); });
+    });
+  }
+  let harianAssignDate = null;
+
+  function selectCalendarDay(dateStr) {
+    document.getElementById('tanggalHarianInput').value = dateStr;
+    openHarianAssignModal(dateStr);
+  }
+
+  function openHarianAssignModal(dateStr) {
+    harianAssignDate = dateStr;
+    const periode = dateStr.substring(0, 7);
+    const listEl = document.getElementById('harianAssignCheckList');
+    const msgEl = document.getElementById('harianAssignModalMsg');
+    msgEl.textContent = ''; msgEl.className = 'form-msg';
+    listEl.innerHTML = '<p style="font-size:12px;color:#94a3b8;">Memuat...</p>';
+
+    const dObj = new Date(dateStr + 'T00:00:00');
+    const dayNames = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    document.getElementById('harianAssignModalSub').textContent =
+      dayNames[dObj.getDay()] + ', ' + dObj.getDate() + ' ' + monthNames[dObj.getMonth()] + ' ' + dObj.getFullYear() +
+      ' — pilih petugas (dari roster bulan ini) yang bertugas hari itu.';
+
+    google.script.run
+      .withSuccessHandler(function(bulanan) {
+        const roster = bulanan.petugas || [];
+        google.script.run
+          .withSuccessHandler(function(harian) {
+            const onDutyIds = (harian.data || []).map(function(h) { return h.id; });
+            if (roster.length === 0) {
+              listEl.innerHTML = '<p style="font-size:12px;color:#94a3b8;">Belum ada petugas dipilih untuk bulan ini. Atur dulu di bagian "Jadwal Bulanan".</p>';
+            } else {
+              listEl.innerHTML = roster.map(function(p) {
+                const checked = onDutyIds.indexOf(p.id) !== -1 ? 'checked' : '';
+                return '<div class="check-item"><input type="checkbox" class="harian-assign-check" value="' + escAttr(p.id) + '" data-nama="' + escAttr(p.nama) + '" ' + checked + '><label>' + escHtml(p.nama) + '</label></div>';
+              }).join('');
+            }
+            document.getElementById('harianAssignModal').classList.add('show');
+          })
+          .withFailureHandler(function(e) { msgEl.textContent = 'Gagal memuat: ' + e.message; msgEl.className = 'form-msg err'; })
+          .getJadwalHarian(dateStr);
+      })
+      .withFailureHandler(function(e) { msgEl.textContent = 'Gagal memuat: ' + e.message; msgEl.className = 'form-msg err'; })
+      .getJadwalBulanan(periode);
+  }
+
+  function closeHarianAssignModal() {
+    document.getElementById('harianAssignModal').classList.remove('show');
+    harianAssignDate = null;
+  }
+
+  function saveHarianAssignModal() {
+    if (!harianAssignDate) return;
+    const list = Array.from(document.querySelectorAll('.harian-assign-check:checked')).map(function(cb) {
+      return { id: cb.value, nama: cb.dataset.nama };
+    });
+    const msgEl = document.getElementById('harianAssignModalMsg');
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res.ok) {
+          showToast('✅ Jadwal petugas tanggal ' + harianAssignDate + ' tersimpan.', '#10b981');
+          closeHarianAssignModal();
+          renderCalendar();
+          renderJadwalHarianUI();
+          refreshPetugasTersedia();
+        } else {
+          msgEl.textContent = res.error; msgEl.className = 'form-msg err';
+        }
+      })
+      .withFailureHandler(function(e) { msgEl.textContent = e.message; msgEl.className = 'form-msg err'; })
+      .saveJadwalHarian(harianAssignDate, list, currentUser ? currentUser.nama : '');
+  }
+
+  // ── IMPORT JADWAL BULANAN DARI EXCEL ──
+  function findEmployeeByName(nama) {
+    const target = String(nama || '').trim().toLowerCase();
+    return employeeListCache.find(function(emp) {
+      return emp.nama.trim().toLowerCase() === target || emp.username.trim().toLowerCase() === target;
+    }) || null;
+  }
+
+  // Unduh template Excel untuk Jadwal Bulanan — sudah terisi Periode (dari input periode
+  // yang sedang dipilih) dan daftar pegawai ber-Role PETUGAS/RESEPSIONIS dari Master Pegawai,
+  // supaya Admin tinggal mengetik "PETUGAS"/"RESEPSIONIS" pada baris yang relevan tanpa perlu
+  // mengetik ulang nama dari nol (dan tanpa risiko typo yang bikin gagal cocok saat diimpor).
+  function downloadJadwalTemplate() {
+    if (typeof XLSX === 'undefined') { showToast('❌ Pustaka Excel gagal dimuat. Coba refresh halaman.', '#ef4444'); return; }
+    const periode = (document.getElementById('periodeInput').value) || currentYYYYMM();
+
+    const kandidat = (employeeListCache || [])
+      .filter(function(emp) { return emp.isActive && (emp.role === 'PETUGAS' || emp.role === 'RESEPSIONIS'); })
+      .sort(function(a, b) { return a.nama.localeCompare(b.nama); });
+
+    if (kandidat.length === 0) {
+      showToast('⚠️ Belum ada pegawai ber-Role PETUGAS/RESEPSIONIS di Master Pegawai. Edit Role pegawai dulu, atau sinkronkan dari Wawai API.', '#f59e0b');
+      return;
+    }
+
+    const rows = [['Periode', 'Nama', 'Username', 'Role']].concat(
+      kandidat.map(function(emp) { return [periode, emp.nama, emp.username, '']; })
+    );
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{ wch: 10 }, { wch: 36 }, { wch: 22 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'Jadwal Bulanan');
+
+    const petunjuk = XLSX.utils.aoa_to_sheet([
+      ['Petunjuk Pengisian Template Jadwal Bulanan'],
+      [],
+      ['1. Kolom Periode & Nama sudah terisi otomatis — jangan diubah agar pencocokan berhasil.'],
+      ['2. Isi kolom Role dengan PETUGAS atau RESEPSIONIS HANYA untuk pegawai yang bertugas periode ini.'],
+      ['3. Biarkan kolom Role kosong untuk pegawai yang TIDAK bertugas — baris tsb akan dilewati saat diimpor.'],
+      ['4. Maksimal 3 pegawai berperan PETUGAS dan 1 pegawai berperan RESEPSIONIS per periode.'],
+      ['5. Setelah selesai, simpan file ini dan unggah lewat tombol "Proses & Simpan" di halaman Jadwal.'],
+    ]);
+    petunjuk['!cols'] = [{ wch: 80 }];
+    XLSX.utils.book_append_sheet(wb, petunjuk, 'Petunjuk');
+
+    XLSX.writeFile(wb, 'Template-Jadwal-Bulanan-' + periode + '.xlsx');
+    showToast('✅ Template diunduh — tinggal isi kolom Role untuk pegawai yang bertugas.', '#10b981');
+  }
+
+  function processExcelUpload() {
+    const fileInput = document.getElementById('excelUploadInput');
+    const file = fileInput.files[0];
+    if (!file) { setFormMsg('excelUploadMsg', 'Pilih file Excel terlebih dahulu.', false); return; }
+    if (typeof XLSX === 'undefined') { setFormMsg('excelUploadMsg', 'Pustaka pembaca Excel gagal dimuat. Coba refresh halaman.', false); return; }
+    setFormMsg('excelUploadMsg', 'Memproses file...', true);
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+        if (!rows || rows.length === 0) {
+          setFormMsg('excelUploadMsg', 'File kosong atau format tidak dikenali.', false);
+          return;
+        }
+
+        const groups = {};   // periode -> { petugas:[], resepsionis:null }
+        const notFound = [];
+
+        rows.forEach(function(row) {
+          const periode = String(row['Periode'] || row['periode'] || '').trim();
+          const nama = String(row['Nama'] || row['nama'] || '').trim();
+          const role = String(row['Role'] || row['role'] || '').trim().toUpperCase();
+          if (!periode || !nama || !role) return; // Role kosong = pegawai ini tidak dijadwalkan bulan ini, lewati
+
+          const match = findEmployeeByName(nama);
+          if (!match) { notFound.push(nama); return; }
+
+          if (!groups[periode]) groups[periode] = { petugas: [], resepsionis: null };
+          if (role === 'RESEPSIONIS') {
+            if (!groups[periode].resepsionis) groups[periode].resepsionis = { id: match.id, nama: match.nama };
+          } else if (groups[periode].petugas.length < 3) {
+            groups[periode].petugas.push({ id: match.id, nama: match.nama });
+          }
+        });
+
+        const periodeKeys = Object.keys(groups);
+        if (periodeKeys.length === 0) {
+          setFormMsg('excelUploadMsg', 'Tidak ada baris valid ditemukan. Cek kembali format kolom (Periode, Nama, Role).', false);
+          return;
+        }
+
+        let processed = 0;
+        let hadError = false;
+        periodeKeys.forEach(function(periode) {
+          google.script.run
+            .withSuccessHandler(function() {
+              processed++;
+              if (processed === periodeKeys.length) finishExcelImport(periodeKeys.length, notFound, hadError);
+            })
+            .withFailureHandler(function() {
+              processed++; hadError = true;
+              if (processed === periodeKeys.length) finishExcelImport(periodeKeys.length, notFound, hadError);
+            })
+            .saveJadwalBulanan(periode, groups[periode].petugas, groups[periode].resepsionis);
+        });
+      } catch (err) {
+        setFormMsg('excelUploadMsg', 'Gagal membaca file: ' + err.message, false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function finishExcelImport(count, notFound, hadError) {
+    let msg = 'Berhasil import ' + count + ' periode.';
+    if (notFound.length > 0) msg += ' Nama tidak ditemukan di Master Pegawai: ' + notFound.join(', ') + '.';
+    setFormMsg('excelUploadMsg', msg, !hadError && notFound.length === 0);
+    fetchJadwalBulananForPeriode();
+    renderCalendar();
+  }
+
+  // ── IMPORT ROTASI HARIAN SATU BULAN DARI EXCEL ──
+  // Menghasilkan daftar "yyyy-MM-dd" untuk seluruh hari dalam suatu periode "yyyy-MM".
+  function getDaysInPeriode(periode) {
+    const parts = periode.split('-');
+    const year = parseInt(parts[0], 10), month = parseInt(parts[1], 10) - 1;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const out = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      out.push(year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0'));
+    }
+    return out;
+  }
+
+  // Template = seluruh tanggal bulan (dari Kalender Rotasi yang sedang ditampilkan) × petugas
+  // roster bulanan periode tsb. Admin/Resepsionis tinggal HAPUS baris yang tidak berlaku.
+  function downloadJadwalHarianTemplate() {
+    if (typeof XLSX === 'undefined') { showToast('❌ Pustaka Excel gagal dimuat. Coba refresh halaman.', '#ef4444'); return; }
+    const periode = calendarPeriode || currentYYYYMM();
+
+    google.script.run
+      .withSuccessHandler(function(bulanan) {
+        const roster = bulanan.petugas || [];
+        if (roster.length === 0) {
+          showToast('⚠️ Belum ada roster Petugas di Jadwal Bulanan periode ' + periode + '. Atur dulu di bagian Jadwal Bulanan.', '#f59e0b');
+          return;
+        }
+        const dates = getDaysInPeriode(periode);
+        const rows = [['Tanggal', 'Nama', 'Username']];
+        dates.forEach(function(tgl) {
+          roster.forEach(function(p) {
+            const emp = employeeListCache.find(function(e) { return e.id === p.id; });
+            rows.push([tgl, p.nama, emp ? emp.username : '']);
+          });
+        });
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        ws['!cols'] = [{ wch: 12 }, { wch: 36 }, { wch: 22 }];
+        XLSX.utils.book_append_sheet(wb, ws, 'Jadwal Harian');
+
+        const petunjuk = XLSX.utils.aoa_to_sheet([
+          ['Petunjuk Pengisian Template Rotasi Harian'],
+          [],
+          ['1. Setiap baris = satu petugas bertugas pada satu tanggal.'],
+          ['2. HAPUS baris untuk kombinasi Tanggal + Nama yang petugas tsb TIDAK bertugas.'],
+          ['3. Sisakan hanya baris yang benar-benar berlaku (petugas tsb bertugas tanggal itu).'],
+          ['4. Jangan ubah isi kolom Tanggal atau Nama pada baris yang disisakan.'],
+          ['5. Simpan file ini, lalu unggah lewat tombol "Proses & Simpan Satu Bulan".'],
+        ]);
+        petunjuk['!cols'] = [{ wch: 80 }];
+        XLSX.utils.book_append_sheet(wb, petunjuk, 'Petunjuk');
+
+        XLSX.writeFile(wb, 'Template-Jadwal-Harian-' + periode + '.xlsx');
+        showToast('✅ Template diunduh — hapus baris yang tidak berlaku, lalu unggah kembali.', '#10b981');
+      })
+      .withFailureHandler(function(e) { showToast('❌ ' + e.message, '#ef4444'); })
+      .getJadwalBulanan(periode);
+  }
+
+  function processJadwalHarianExcelUpload() {
+    const fileInput = document.getElementById('harianExcelUploadInput');
+    const file = fileInput.files[0];
+    if (!file) { setFormMsg('harianExcelUploadMsg', 'Pilih file Excel terlebih dahulu.', false); return; }
+    if (typeof XLSX === 'undefined') { setFormMsg('harianExcelUploadMsg', 'Pustaka pembaca Excel gagal dimuat. Coba refresh halaman.', false); return; }
+    setFormMsg('harianExcelUploadMsg', 'Memproses file...', true);
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+        if (!rows || rows.length === 0) {
+          setFormMsg('harianExcelUploadMsg', 'File kosong atau format tidak dikenali.', false);
+          return;
+        }
+
+        const dataByDate = {};   // "yyyy-MM-dd" -> [{id,nama}, ...]
+        const notFound = [];
+        let totalRows = 0;
+
+        rows.forEach(function(row) {
+          const tanggalRaw = row['Tanggal'] || row['tanggal'] || '';
+          const nama = String(row['Nama'] || row['nama'] || '').trim();
+          if (!tanggalRaw || !nama) return;
+          // Excel kadang mengubah "2026-09-01" jadi objek Date saat dibaca SheetJS — normalisasi ke yyyy-MM-dd.
+          let tanggal;
+          if (tanggalRaw instanceof Date) {
+            tanggal = tanggalRaw.getFullYear() + '-' + String(tanggalRaw.getMonth() + 1).padStart(2, '0') + '-' + String(tanggalRaw.getDate()).padStart(2, '0');
+          } else {
+            tanggal = String(tanggalRaw).trim().substring(0, 10);
+          }
+          if (!tanggal) return;
+
+          const match = findEmployeeByName(nama);
+          if (!match) { notFound.push(nama); return; }
+
+          if (!dataByDate[tanggal]) dataByDate[tanggal] = [];
+          if (!dataByDate[tanggal].some(function(x) { return x.id === match.id; })) {
+            dataByDate[tanggal].push({ id: match.id, nama: match.nama });
+            totalRows++;
+          }
+        });
+
+        const totalDates = Object.keys(dataByDate).length;
+        if (totalDates === 0) {
+          setFormMsg('harianExcelUploadMsg', 'Tidak ada baris valid ditemukan. Cek kembali format kolom (Tanggal, Nama).', false);
+          return;
+        }
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            let msg = res.ok ? res.message : res.error;
+            if (res.ok && notFound.length > 0) msg += ' Nama tidak ditemukan: ' + notFound.join(', ') + '.';
+            setFormMsg('harianExcelUploadMsg', msg, res.ok && notFound.length === 0);
+            if (res.ok) {
+              renderCalendar();
+              renderJadwalHarianUI();
+              refreshPetugasTersedia();
+            }
+          })
+          .withFailureHandler(function(err) { setFormMsg('harianExcelUploadMsg', err.message, false); })
+          .saveJadwalHarianBulk(dataByDate, currentUser ? currentUser.nama : '');
+      } catch (err) {
+        setFormMsg('harianExcelUploadMsg', 'Gagal membaca file: ' + err.message, false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function setFormMsg(id, msg, ok) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = 'form-msg ' + (ok ? 'ok' : 'err');
+  }
+
+  // ════════════════════════════════════════════════════════
+  // TAB: REKAP & INSIGHT
+  // ════════════════════════════════════════════════════════
+  function loadRekap() {
+    google.script.run
+      .withSuccessHandler(function(recap) {
+        document.getElementById('rekapTotal').textContent = recap.total || 0;
+        document.getElementById('rekapAvgRating').textContent = recap.avgRating || 0;
+        const items = Object.keys(recap.byPrefix || {}).map(function(k) { return { label: k, value: recap.byPrefix[k] }; });
+        renderBars('rekapPrefixBars', items);
+      })
+      .withFailureHandler(function() {})
+      .getDailyRecap(null);
+
+    google.script.run
+      .withSuccessHandler(function(ins) {
+        document.getElementById('rekapAvgWait').textContent = (ins.avgWaitMin || 0) + 'm';
+        const trendItems = (ins.trend || []).map(function(t) { return { label: t.tanggal.substring(5), value: t.total }; });
+        renderBars('rekapTrendBars', trendItems);
+
+        const topHtml = (ins.topPetugas || []).length === 0
+          ? '<p style="font-size:12px;color:#94a3b8;">Belum ada data hari ini.</p>'
+          : '<table style="width:100%;font-size:13px;border-collapse:collapse;">' +
+            '<tr style="text-align:left;color:#64748b;"><th style="padding:6px;">Petugas</th><th>Jumlah Layani</th><th>Rating</th></tr>' +
+            ins.topPetugas.map(function(p) {
+              return '<tr style="border-top:1px solid var(--border);"><td style="padding:6px;">' + escHtml(p.nama) + '</td><td>' + p.count + '</td><td>' + (p.avgRating !== null ? ('⭐ ' + p.avgRating) : '-') + '</td></tr>';
+            }).join('') + '</table>';
+        document.getElementById('rekapTopPetugas').innerHTML = topHtml;
+      })
+      .withFailureHandler(function() {})
+      .getDashboardInsight(7);
+
+    google.script.run
+      .withSuccessHandler(function(rr) {
+        const listHtml = (rr.list || []).length === 0
+          ? '<p style="font-size:12px;color:#94a3b8;">Belum ada rating hari ini.</p>'
+          : rr.list.map(function(item) {
+              return '<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;">' +
+                '<b>' + escHtml(item.ticket) + ' — ' + escHtml(item.visitorName) + '</b> · Petugas: ' + escHtml(item.petugas) +
+                ' · ⭐ ' + item.rating + (item.comment ? '<br><span style="color:#64748b;">"' + escHtml(item.comment) + '"</span>' : '') +
+                '</div>';
+            }).join('');
+        document.getElementById('rekapRatingList').innerHTML = listHtml;
+      })
+      .withFailureHandler(function() {})
+      .getTodayRatingRecap();
+  }
+
+  function renderBars(containerId, items) {
+    const max = Math.max.apply(null, items.map(function(i) { return i.value; }).concat([1]));
+    const html = items.map(function(i) {
+      const pct = Math.round((i.value / max) * 100);
+      return '<div class="bar-row"><div class="bar-label">' + escHtml(i.label) + '</div><div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;">' + (i.value > 0 ? i.value : '') + '</div></div><div class="bar-value">' + i.value + '</div></div>';
+    }).join('');
+    document.getElementById(containerId).innerHTML = html || '<p style="font-size:12px;color:#94a3b8;">Tidak ada data.</p>';
+  }
+
+  // Ekspor Rekap & Insight hari ini ke berkas .xlsx (diproses di browser dengan SheetJS,
+  // tidak perlu request tambahan ke server selain data yang memang sudah dipakai tab Rekap).
+  function exportRekapToExcel() {
+    if (typeof XLSX === 'undefined') { showToast('❌ Pustaka Excel gagal dimuat. Coba refresh halaman.', '#ef4444'); return; }
+    showToast('⏳ Menyiapkan berkas Excel...', '#0ea5e9');
+
+    google.script.run.withSuccessHandler(function(recap) {
+      google.script.run.withSuccessHandler(function(ins) {
+        google.script.run.withSuccessHandler(function(rr) {
+          buildAndDownloadRekapWorkbook(recap, ins, rr);
+        }).withFailureHandler(function(e) { showToast('❌ ' + e.message, '#ef4444'); }).getTodayRatingRecap();
+      }).withFailureHandler(function(e) { showToast('❌ ' + e.message, '#ef4444'); }).getDashboardInsight(7);
+    }).withFailureHandler(function(e) { showToast('❌ ' + e.message, '#ef4444'); }).getDailyRecap(null);
+  }
+
+  function buildAndDownloadRekapWorkbook(recap, ins, rr) {
+    try {
+      const wb = XLSX.utils.book_new();
+
+      const ringkasan = [
+        ['Rekap Harian PST BPS', recap.tanggal || ''],
+        [],
+        ['Total Kunjungan', recap.total || 0],
+        ['Rata-rata Rating', recap.avgRating || 0],
+        ['Rata-rata Waktu Tunggu (menit)', ins.avgWaitMin || 0],
+        ['Rata-rata Waktu Layanan (menit)', ins.avgServiceMin || 0],
+      ];
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ringkasan), 'Ringkasan');
+
+      const prefixRows = [['Prefix Layanan', 'Jumlah']].concat(
+        Object.keys(recap.byPrefix || {}).map(function(k) { return [k, recap.byPrefix[k]]; })
+      );
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(prefixRows), 'Distribusi Layanan');
+
+      const trendRows = [['Tanggal', 'Total Antrian']].concat(
+        (ins.trend || []).map(function(t) { return [t.tanggal, t.total]; })
+      );
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(trendRows), 'Tren 7 Hari');
+
+      const topRows = [['Petugas', 'Jumlah Layani', 'Rata-rata Rating']].concat(
+        (ins.topPetugas || []).map(function(p) { return [p.nama, p.count, p.avgRating !== null ? p.avgRating : '-']; })
+      );
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(topRows), 'Top Petugas');
+
+      const ratingRows = [['Tiket', 'Nama Pengunjung', 'Petugas', 'Rating', 'Komentar']].concat(
+        (rr.list || []).map(function(r) { return [r.ticket, r.visitorName, r.petugas, r.rating, r.comment || '']; })
+      );
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ratingRows), 'Rating Hari Ini');
+
+      const filename = 'Rekap-PST-BPS-' + (recap.tanggal || todayYYYYMMDD()) + '.xlsx';
+      XLSX.writeFile(wb, filename);
+      showToast('✅ Berkas Excel berhasil diunduh', '#10b981');
+    } catch (err) {
+      showToast('❌ Gagal membuat berkas Excel: ' + err.message, '#ef4444');
+    }
+  }
+
+  // ════════════════════════════════════════════════════════
+  // TAB: PROFIL SAYA
+  // ════════════════════════════════════════════════════════
+  function loadProfilUI() {
+    if (!currentUser) return;
+    document.getElementById('profilNama').value = currentUser.nama || '';
+    document.getElementById('profilUsername').value = currentUser.username || '';
+    document.getElementById('profilPassword').value = '';
+    document.getElementById('profilMsg').textContent = '';
+  }
+
+  function saveProfilUI() {
+    const nama = document.getElementById('profilNama').value.trim();
+    const username = document.getElementById('profilUsername').value.trim();
+    const pass = document.getElementById('profilPassword').value;
+    const oldUsername = currentUser.username;
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res.ok) {
+          currentUser = res.user;
+          document.getElementById('userName').textContent = currentUser.nama;
+          document.getElementById('userInitials').textContent = currentUser.nama.charAt(0).toUpperCase();
+          setFormMsg('profilMsg', 'Profil berhasil diperbarui.', true);
+          document.getElementById('profilPassword').value = '';
+        } else {
+          setFormMsg('profilMsg', res.error, false);
+        }
+      })
+      .withFailureHandler(function(e) { setFormMsg('profilMsg', e.message, false); })
+      .updateProfile(oldUsername, nama, username, pass);
+  }
+
+  // ════════════════════════════════════════════════════════
+  // TAB: MASTER PEGAWAI (Admin: kelola data pegawai)
+  // ════════════════════════════════════════════════════════
+  let masterPegawaiCache = [];
+  let editingEmployeeId = null;
+
+  function loadMasterPegawaiUI() {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        masterPegawaiCache = (res && res.data) || [];
+        employeeListCache = masterPegawaiCache; // sinkron dengan pemilihan di tab Jadwal
+        renderMasterPegawaiTable();
+      })
+      .withFailureHandler(function() {})
+      .getEmployeeList();
+  }
+
+  function syncWawaiUI() {
+    const btn = document.getElementById('btnSyncWawai');
+    const msgEl = document.getElementById('syncWawaiMsg');
+    btn.disabled = true;
+    btn.textContent = '⏳ Menyinkronkan...';
+    msgEl.textContent = ''; msgEl.className = 'form-msg';
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        btn.disabled = false;
+        btn.textContent = '🔄 Sinkronisasi Data Pegawai (Wawai API)';
+        if (res.ok) {
+          msgEl.textContent = res.message;
+          msgEl.className = 'form-msg ok';
+          loadMasterPegawaiUI();
+        } else {
+          msgEl.textContent = res.error;
+          msgEl.className = 'form-msg err';
+        }
+      })
+      .withFailureHandler(function(e) {
+        btn.disabled = false;
+        btn.textContent = '🔄 Sinkronisasi Data Pegawai (Wawai API)';
+        msgEl.textContent = e.message;
+        msgEl.className = 'form-msg err';
+      })
+      .syncPegawaiFromWawai();
+  }
+
+  function renderMasterPegawaiTable() {
+    const search = (document.getElementById('masterSearchInput').value || '').toLowerCase().trim();
+    const filtered = masterPegawaiCache.filter(function(emp) {
+      if (!search) return true;
+      return emp.nama.toLowerCase().indexOf(search) !== -1 || emp.username.toLowerCase().indexOf(search) !== -1;
+    });
+    const tbody = document.getElementById('masterPegawaiTbody');
+    const emptyNote = document.getElementById('masterEmptyNote');
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '';
+      emptyNote.style.display = 'block';
+      return;
+    }
+    emptyNote.style.display = 'none';
+
+    tbody.innerHTML = filtered.map(function(emp) {
+      const statusBadge = emp.isActive
+        ? '<span style="color:var(--success); font-weight:700;">Aktif</span>'
+        : '<span style="color:var(--danger); font-weight:700;">Nonaktif</span>';
+      return '<tr style="border-top:1px solid var(--border);">' +
+        '<td style="padding:8px;">' + escHtml(emp.nama) + '</td>' +
+        '<td>' + escHtml(emp.username) + '</td>' +
+        '<td>' + escHtml(emp.role) + '</td>' +
+        '<td>' + statusBadge + '</td>' +
+        '<td><button class="btn-refresh" data-edit-id="' + escAttr(emp.id) + '">Edit</button></td>' +
+        '</tr>';
+    }).join('');
+
+    tbody.querySelectorAll('[data-edit-id]').forEach(function(btn) {
+      btn.addEventListener('click', function() { openEmployeeModal(this.dataset.editId); });
+    });
+  }
+
+  function openEmployeeModal(id) {
+    editingEmployeeId = id;
+    document.getElementById('employeeModalMsg').textContent = '';
+    document.getElementById('employeeModalMsg').className = 'form-msg';
+    if (id) {
+      const emp = masterPegawaiCache.find(function(e) { return e.id === id; });
+      document.getElementById('employeeModalTitle').textContent = '✏️ Edit Pegawai';
+      document.getElementById('empNama').value = emp ? emp.nama : '';
+      document.getElementById('empUsername').value = emp ? emp.username : '';
+      document.getElementById('empPassword').value = '';
+      document.getElementById('empRole').value = emp ? emp.role : 'PETUGAS';
+      document.getElementById('empIsActive').checked = emp ? emp.isActive : true;
+    } else {
+      document.getElementById('employeeModalTitle').textContent = '➕ Tambah Pegawai';
+      document.getElementById('empNama').value = '';
+      document.getElementById('empUsername').value = '';
+      document.getElementById('empPassword').value = '';
+      document.getElementById('empRole').value = 'PEGAWAI';
+      document.getElementById('empIsActive').checked = true;
+    }
+    document.getElementById('employeeModal').classList.add('show');
+  }
+  function closeEmployeeModal() {
+    document.getElementById('employeeModal').classList.remove('show');
+    editingEmployeeId = null;
+  }
+  function saveEmployeeModal() {
+    const nama = document.getElementById('empNama').value.trim();
+    const username = document.getElementById('empUsername').value.trim();
+    const password = document.getElementById('empPassword').value.trim();
+    const role = document.getElementById('empRole').value;
+    const isActive = document.getElementById('empIsActive').checked;
+    const msgEl = document.getElementById('employeeModalMsg');
+
+    if (!nama || !username) {
+      msgEl.textContent = 'Nama dan username wajib diisi.';
+      msgEl.className = 'form-msg err';
+      return;
+    }
+
+    if (editingEmployeeId) {
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res.ok) { closeEmployeeModal(); loadMasterPegawaiUI(); showToast('✅ Pegawai berhasil diperbarui.', '#10b981'); }
+          else { msgEl.textContent = res.error; msgEl.className = 'form-msg err'; }
+        })
+        .withFailureHandler(function(e) { msgEl.textContent = e.message; msgEl.className = 'form-msg err'; })
+        .updateEmployeeById(editingEmployeeId, nama, username, password, role, isActive);
+    } else {
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res.ok) { closeEmployeeModal(); loadMasterPegawaiUI(); showToast('✅ Pegawai baru ditambahkan.', '#10b981'); }
+          else { msgEl.textContent = res.error; msgEl.className = 'form-msg err'; }
+        })
+        .withFailureHandler(function(e) { msgEl.textContent = e.message; msgEl.className = 'form-msg err'; })
+        .addEmployee(nama, username, password, role);
+    }
+  }
+
+  // ── TOAST ──
+  function showToast(msg, color) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.style.background = color; t.style.color = 'white';
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 3500);
+  }
+</script>
+</body>
+</html>
