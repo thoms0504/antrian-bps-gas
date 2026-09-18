@@ -90,8 +90,15 @@
   }
   .avatar-initials {
     width: 30px; height: 30px; border-radius: 50%;
-    background: rgba(255,255,255,0.35); display: flex; align-items: center;
-    justify-content: center; font-weight: 800; font-size: 12.5px;
+    background-color: rgba(255,255,255,0.35); background-size: cover; background-position: center;
+    display: flex; align-items: center;
+    justify-content: center; font-weight: 800; font-size: 12.5px; flex-shrink: 0;
+  }
+  .avatar-sm {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    background-color: var(--success); background-size: cover; background-position: center;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 10.5px; color: white;
   }
   .btn-logout {
     background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,.22);
@@ -400,11 +407,16 @@
     border-radius: 999px; padding: 3px 10px; margin: 2px 4px 0 0; font-weight: 700;
   }
   .onduty-chip {
-    display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700;
     background: #ecfdf5; color: var(--success-dark); border: 1px solid #a7f3d0;
-    border-radius: 999px; padding: 4px 11px;
+    border-radius: 999px; padding: 3px 11px 3px 3px;
   }
-  .onduty-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
+  .onduty-chip .avatar-xs {
+    width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+    background-color: var(--success); background-size: cover; background-position: center;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8.5px; font-weight: 800; color: white;
+  }
 
   .btn-export {
     font-size: 12px; background: linear-gradient(135deg, var(--success), #34d399); color: white;
@@ -551,7 +563,7 @@
       <table style="width:100%; font-size:13px; border-collapse:collapse;" id="masterPegawaiTable">
         <thead>
           <tr style="text-align:left; color:var(--text-muted); border-bottom:2px solid var(--border);">
-            <th style="padding:8px;">Nama</th><th>Username</th><th>Role</th><th>Status</th><th>Aksi</th>
+            <th style="padding:8px; width:40px;"></th><th>Nama</th><th>Username</th><th>Role</th><th>Status</th><th>Aksi</th>
           </tr>
         </thead>
         <tbody id="masterPegawaiTbody"></tbody>
@@ -697,6 +709,13 @@
   <div class="content" id="tab-profil" style="display:none;">
     <div class="section-title">👤 Profil Saya</div>
     <div class="card-box" style="max-width:480px;">
+      <div style="display:flex; align-items:center; gap:14px; margin-bottom:18px;">
+        <div class="avatar-initials" id="profilAvatarPreview" style="width:56px; height:56px; font-size:20px; background-color:var(--primary); color:white;"></div>
+        <div style="flex:1;">
+          <label style="margin-bottom:4px;">Foto Profil (URL Gambar)</label>
+          <input type="text" id="profilFotoUrl" placeholder="https://... (opsional, tautan gambar publik)" oninput="previewProfilAvatar()">
+        </div>
+      </div>
       <label>Nama Lengkap</label>
       <input type="text" id="profilNama">
       <label style="margin-top:12px;">Username</label>
@@ -736,8 +755,15 @@
   <div class="modal-box">
     <div class="modal-title" id="employeeModalTitle">➕ Tambah Pegawai</div>
     <div class="modal-sub">Isi data pegawai di bawah ini.</div>
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:16px;">
+      <div class="avatar-initials" id="empAvatarPreview" style="width:52px; height:52px; font-size:18px; background-color:var(--primary); color:white;"></div>
+      <div style="flex:1;">
+        <label style="margin-bottom:4px;">Foto Profil (URL Gambar, opsional)</label>
+        <input type="text" id="empFotoUrl" placeholder="https://..." oninput="previewEmpAvatar()">
+      </div>
+    </div>
     <label>Nama Lengkap</label>
-    <input type="text" id="empNama" placeholder="Nama lengkap pegawai" style="margin-bottom:14px;">
+    <input type="text" id="empNama" placeholder="Nama lengkap pegawai" style="margin-bottom:14px;" oninput="previewEmpAvatar()">
     <label>Username</label>
     <input type="text" id="empUsername" placeholder="username.pegawai" style="margin-bottom:14px;">
     <label>Password <span style="font-weight:400; color:#94a3b8;">(kosongkan agar tetap/default)</span></label>
@@ -855,6 +881,7 @@
   let assignEntryId = null;
   let selectedRating = 0;
   let petugasTersediaHariIni = [];
+  let resepsionisBertugas = null;
   let employeeListCache = [];
   // Mode Bertugas
   let dutyModeOn = false;
@@ -887,7 +914,7 @@
           document.getElementById('loginWrap').style.display = 'none';
           document.getElementById('dashboard').style.display = 'block';
           document.getElementById('userName').textContent = res.user.nama;
-          document.getElementById('userInitials').textContent = res.user.nama.charAt(0).toUpperCase();
+          applyAvatar('userInitials', res.user.fotoUrl, res.user.nama);
           setupUIForRole(res.user);
           loadQueue();
           refreshPetugasTersedia();
@@ -927,6 +954,7 @@
     google.script.run
       .withSuccessHandler(function(res) {
         petugasTersediaHariIni = (res && res.data) || [];
+        resepsionisBertugas = (res && res.resepsionis) || null;
         renderOnDutyBanner();
       })
       .withFailureHandler(function() {})
@@ -939,13 +967,22 @@
   function renderOnDutyBanner() {
     const el = document.getElementById('onDutyChips');
     if (!el) return;
-    if (!petugasTersediaHariIni || petugasTersediaHariIni.length === 0) {
+    const chips = [];
+    if (resepsionisBertugas) {
+      chips.push(onDutyChipHtml(resepsionisBertugas, 'Resepsionis'));
+    }
+    (petugasTersediaHariIni || []).forEach(function(p) { chips.push(onDutyChipHtml(p, 'Petugas')); });
+
+    if (chips.length === 0) {
       el.innerHTML = '<span style="font-size:12px; color:var(--text-faint);">Belum ada petugas aktif saat ini</span>';
       return;
     }
-    el.innerHTML = petugasTersediaHariIni.map(function(p) {
-      return '<span class="onduty-chip"><span class="dot"></span>' + escHtml(p.nama) + '</span>';
-    }).join('');
+    el.innerHTML = chips.join('');
+  }
+  function onDutyChipHtml(person, roleLabel) {
+    return '<span class="onduty-chip">' + avatarHtml(person.fotoUrl, person.nama, 'avatar-xs') +
+      escHtml(person.nama) + (roleLabel === 'Resepsionis' ? ' <span style="opacity:.7;">(Resepsionis)</span>' : '') +
+      '</span>';
   }
 
   // Panel status pribadi untuk role PETUGAS: Mode Bertugas + jumlah pengunjung yang sudah
@@ -1099,6 +1136,41 @@
   function escHtml(str) {
     return String(str == null ? '' : str)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // Ambil inisial (maks. 2 huruf) dari nama — dipakai sebagai avatar fallback kalau
+  // pegawai belum mengisi Foto Profil.
+  function initialsOf(nama) {
+    const parts = String(nama || '').trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  // Terapkan foto profil (kalau ada) ke elemen avatar ber-ID tertentu; kalau tidak ada,
+  // tampilkan inisial nama sebagai fallback. Dipakai di topbar, Profil Saya, dsb.
+  function applyAvatar(elId, fotoUrl, nama) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    const url = String(fotoUrl || '').trim();
+    if (url) {
+      el.style.backgroundImage = "url('" + url.replace(/'/g, '%27').replace(/"/g, '%22') + "')";
+      el.textContent = '';
+    } else {
+      el.style.backgroundImage = '';
+      el.textContent = initialsOf(nama);
+    }
+  }
+
+  // HTML kartu avatar kecil (dipakai untuk daftar seperti panel Bertugas Sekarang / tabel
+  // Master Pegawai) — mengembalikan string HTML siap sisip, bukan memanipulasi DOM langsung.
+  function avatarHtml(fotoUrl, nama, sizeClass) {
+    const url = String(fotoUrl || '').trim();
+    const cls = sizeClass || 'avatar-sm';
+    if (url) {
+      return '<div class="' + cls + '" style="background-image:url(\'' + url.replace(/'/g, '%27').replace(/"/g, '%22') + '\');"></div>';
+    }
+    return '<div class="' + cls + '">' + escHtml(initialsOf(nama)) + '</div>';
   }
 
   // ── Pasang event listener untuk tombol aksi (pengganti onclick inline) ──
@@ -2176,13 +2248,22 @@
     document.getElementById('profilNama').value = currentUser.nama || '';
     document.getElementById('profilUsername').value = currentUser.username || '';
     document.getElementById('profilPassword').value = '';
+    document.getElementById('profilFotoUrl').value = currentUser.fotoUrl || '';
     document.getElementById('profilMsg').textContent = '';
+    previewProfilAvatar();
+  }
+
+  function previewProfilAvatar() {
+    const url = document.getElementById('profilFotoUrl').value.trim();
+    const nama = document.getElementById('profilNama').value || (currentUser ? currentUser.nama : '');
+    applyAvatar('profilAvatarPreview', url, nama);
   }
 
   function saveProfilUI() {
     const nama = document.getElementById('profilNama').value.trim();
     const username = document.getElementById('profilUsername').value.trim();
     const pass = document.getElementById('profilPassword').value;
+    const fotoUrl = document.getElementById('profilFotoUrl').value.trim();
     const oldUsername = currentUser.username;
 
     google.script.run
@@ -2190,7 +2271,7 @@
         if (res.ok) {
           currentUser = res.user;
           document.getElementById('userName').textContent = currentUser.nama;
-          document.getElementById('userInitials').textContent = currentUser.nama.charAt(0).toUpperCase();
+          applyAvatar('userInitials', currentUser.fotoUrl, currentUser.nama);
           setFormMsg('profilMsg', 'Profil berhasil diperbarui.', true);
           document.getElementById('profilPassword').value = '';
         } else {
@@ -2198,7 +2279,7 @@
         }
       })
       .withFailureHandler(function(e) { setFormMsg('profilMsg', e.message, false); })
-      .updateProfile(oldUsername, nama, username, pass);
+      .updateProfile(oldUsername, nama, username, pass, fotoUrl);
   }
 
   // ════════════════════════════════════════════════════════
@@ -2268,7 +2349,8 @@
         ? '<span style="color:var(--success); font-weight:700;">Aktif</span>'
         : '<span style="color:var(--danger); font-weight:700;">Nonaktif</span>';
       return '<tr style="border-top:1px solid var(--border);">' +
-        '<td style="padding:8px;">' + escHtml(emp.nama) + '</td>' +
+        '<td style="padding:8px;">' + avatarHtml(emp.fotoUrl, emp.nama, 'avatar-sm') + '</td>' +
+        '<td>' + escHtml(emp.nama) + '</td>' +
         '<td>' + escHtml(emp.username) + '</td>' +
         '<td>' + escHtml(emp.role) + '</td>' +
         '<td>' + statusBadge + '</td>' +
@@ -2293,6 +2375,7 @@
       document.getElementById('empPassword').value = '';
       document.getElementById('empRole').value = emp ? emp.role : 'PETUGAS';
       document.getElementById('empIsActive').checked = emp ? emp.isActive : true;
+      document.getElementById('empFotoUrl').value = emp ? (emp.fotoUrl || '') : '';
     } else {
       document.getElementById('employeeModalTitle').textContent = '➕ Tambah Pegawai';
       document.getElementById('empNama').value = '';
@@ -2300,8 +2383,13 @@
       document.getElementById('empPassword').value = '';
       document.getElementById('empRole').value = 'PEGAWAI';
       document.getElementById('empIsActive').checked = true;
+      document.getElementById('empFotoUrl').value = '';
     }
+    previewEmpAvatar();
     document.getElementById('employeeModal').classList.add('show');
+  }
+  function previewEmpAvatar() {
+    applyAvatar('empAvatarPreview', document.getElementById('empFotoUrl').value.trim(), document.getElementById('empNama').value);
   }
   function closeEmployeeModal() {
     document.getElementById('employeeModal').classList.remove('show');
@@ -2313,6 +2401,7 @@
     const password = document.getElementById('empPassword').value.trim();
     const role = document.getElementById('empRole').value;
     const isActive = document.getElementById('empIsActive').checked;
+    const fotoUrl = document.getElementById('empFotoUrl').value.trim();
     const msgEl = document.getElementById('employeeModalMsg');
 
     if (!nama || !username) {
@@ -2328,7 +2417,7 @@
           else { msgEl.textContent = res.error; msgEl.className = 'form-msg err'; }
         })
         .withFailureHandler(function(e) { msgEl.textContent = e.message; msgEl.className = 'form-msg err'; })
-        .updateEmployeeById(editingEmployeeId, nama, username, password, role, isActive);
+        .updateEmployeeById(editingEmployeeId, nama, username, password, role, isActive, fotoUrl);
     } else {
       google.script.run
         .withSuccessHandler(function(res) {
@@ -2336,7 +2425,7 @@
           else { msgEl.textContent = res.error; msgEl.className = 'form-msg err'; }
         })
         .withFailureHandler(function(e) { msgEl.textContent = e.message; msgEl.className = 'form-msg err'; })
-        .addEmployee(nama, username, password, role);
+        .addEmployee(nama, username, password, role, fotoUrl);
     }
   }
 

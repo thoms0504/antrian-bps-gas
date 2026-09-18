@@ -121,25 +121,45 @@
     border-radius: 999px;
   }
 
-  .petugas-today-banner {
-    background: rgba(16,185,129,0.10);
-    border: 1px solid rgba(16,185,129,0.25);
+  .staff-on-duty-panel {
+    background: rgba(16,185,129,0.06);
+    border: 1px solid rgba(16,185,129,0.18);
     border-radius: 12px;
-    padding: 12px 14px;
+    padding: 14px 14px 6px;
     margin-bottom: 16px;
   }
-  .petugas-today-label {
+  .staff-on-duty-label {
     font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-    color: #34d399; display: block; margin-bottom: 6px;
+    color: #34d399; display: block; margin-bottom: 10px;
   }
-  .petugas-today-names {
-    font-size: 13px; color: #f1f5f9; font-weight: 600; line-height: 1.6;
+  /* Daftar staf bertugas ditata VERTIKAL (satu baris per orang) supaya panel bisa
+     memanjang ke bawah mengikuti jumlah staf, bukan dipepetkan jadi chip sempit. */
+  .staff-card {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 8px 8px 6px; border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    margin-bottom: 8px;
   }
-  .petugas-today-names .chip {
-    display: inline-block; background: rgba(16,185,129,0.18);
-    border: 1px solid rgba(16,185,129,0.3); border-radius: 999px;
-    padding: 3px 10px; margin: 2px 4px 2px 0; font-size: 12px;
+  .staff-avatar {
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    background-color: rgba(16,185,129,0.22); background-size: cover; background-position: center;
+    border: 1.5px solid rgba(16,185,129,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px; color: #34d399;
   }
+  .staff-card.role-resepsionis .staff-avatar {
+    background-color: rgba(14,165,233,0.22); border-color: rgba(14,165,233,0.45); color: #38bdf8;
+  }
+  .staff-info { min-width: 0; flex: 1; }
+  .staff-name {
+    font-size: 13.5px; font-weight: 700; color: #f1f5f9;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .staff-role {
+    font-size: 10.5px; color: #34d399; text-transform: uppercase; letter-spacing: .04em;
+    font-weight: 700; margin-top: 1px;
+  }
+  .staff-card.role-resepsionis .staff-role { color: #38bdf8; }
   .queue-item {
     display: flex; align-items: center; gap: 12px;
     padding: 12px 14px; border-radius: 12px;
@@ -410,9 +430,9 @@
 
   <!-- Column 2: Queue list (Menunggu & Selesai) -->
   <div class="queue-panel">
-    <div class="petugas-today-banner" id="petugasTodayBanner">
-      <span class="petugas-today-label">👥 Petugas Bertugas Hari Ini</span>
-      <div class="petugas-today-names" id="petugasTodayNames">Memuat...</div>
+    <div class="staff-on-duty-panel" id="staffOnDutyPanel">
+      <span class="staff-on-duty-label">👥 Sedang Bertugas</span>
+      <div id="staffOnDutyList">Memuat...</div>
     </div>
 
     <div class="queue-panel-title">
@@ -684,17 +704,48 @@
   function fetchPetugasHariIni() {
     google.script.run
       .withSuccessHandler(function(res) {
-        const el = document.getElementById('petugasTodayNames');
+        const el = document.getElementById('staffOnDutyList');
         const data = (res && res.data) || [];
-        if (data.length === 0) {
-          el.innerHTML = '<span style="color:#94a3b8; font-weight:500;">Belum ada petugas dijadwalkan hari ini</span>';
-        } else {
-          el.innerHTML = data.map(function(p) { return '<span class="chip">' + escKioskHtml(p.nama) + '</span>'; }).join('');
+        const resepsionis = res && res.resepsionis;
+
+        if (data.length === 0 && !resepsionis) {
+          el.innerHTML = '<span style="color:#94a3b8; font-weight:500; font-size:13px;">Belum ada staf dijadwalkan hari ini</span>';
+          return;
         }
+        let html = '';
+        if (resepsionis) html += staffCardHtml(resepsionis, 'Resepsionis', 'role-resepsionis');
+        html += data.map(function(p) { return staffCardHtml(p, 'Petugas PST', 'role-petugas'); }).join('');
+        el.innerHTML = html;
       })
       .withFailureHandler(function() {})
       .getPetugasTersediaHariIni(null);
   }
+
+  // Ambil inisial (maks. 2 huruf) dari nama, dipakai sebagai avatar fallback saat pegawai
+  // belum mengisi Foto Profil.
+  function staffInitials(nama) {
+    const parts = String(nama || '').trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  // Kartu satu staf (foto profil kalau ada, kalau tidak avatar inisial) + nama + label peran.
+  function staffCardHtml(person, roleLabel, roleClass) {
+    const hasFoto = person.fotoUrl && String(person.fotoUrl).trim() !== '';
+    const avatarStyle = hasFoto
+      ? ' style="background-image:url(\'' + String(person.fotoUrl).replace(/'/g, '%27').replace(/"/g, '%22') + '\');"'
+      : '';
+    const avatarInner = hasFoto ? '' : escKioskHtml(staffInitials(person.nama));
+    return '<div class="staff-card ' + roleClass + '">' +
+      '<div class="staff-avatar"' + avatarStyle + '>' + avatarInner + '</div>' +
+      '<div class="staff-info">' +
+        '<div class="staff-name">' + escKioskHtml(person.nama) + '</div>' +
+        '<div class="staff-role">' + roleLabel + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
   function escKioskHtml(str) {
     return String(str == null ? '' : str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }

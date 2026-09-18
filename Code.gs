@@ -7,7 +7,7 @@
 //   https://docs.google.com/spreadsheets/d/[SPREADSHEET_ID]/edit
 // ============================================================
 
-const SPREADSHEET_ID = "{EDIT SPREADSHEET ID ANDA}";
+const SPREADSHEET_ID = "{EDIT ID SPREADSHEET ANDA}-tc";
 const SHEET_QUEUE    = "Queue";
 const SHEET_CONFIG   = "Config";
 const SHEET_USERS    = "Users";
@@ -102,6 +102,7 @@ function setupSpreadsheet() {
   }
   getOrCreateSheet(SHEET_USERS, ["ID","Nama","Username","Password","Role","IsActive"]);
   getOrCreateSheet(SHEET_JADWAL_BULANAN, ["ID","Periode","PegawaiID","Nama","Role","IsActive"]);
+  ensureUsersExtraColumns_();         // Users + kolom FotoUrl (foto profil)
   ensureJadwalHarianExtraColumns_(); // JadwalHarian + kolom IsDutyModeOn (Mode Bertugas)
   ensurePingSheet_();                // PingNotification (fitur Ping/Ready)
   ensureServiceLogSheet_();          // QueueServiceLog (fitur Multi-Petugas)
@@ -443,6 +444,42 @@ function submitRatingWithPetugas(entryId, rating, comment, petugasNamaOverride) 
   }
 }
 
+// ─── FOTO PROFIL (opsional, berisi URL gambar) ───────────
+// Menambahkan kolom FotoUrl ke sheet Users kalau belum ada (aman dijalankan berkali-kali
+// & di spreadsheet lama). Nilainya berupa URL gambar langsung (mis. tautan gambar publik
+// dari Google Drive/Photos) — sistem ini tidak menangani unggah berkas biner, jadi pegawai/
+// Admin cukup menempelkan link gambar yang sudah ada.
+function ensureUsersExtraColumns_() {
+  const sheet = getOrCreateSheet(SHEET_USERS, ["ID","Nama","Username","Password","Role","IsActive"]);
+  const lastCol = sheet.getLastColumn();
+  const headers = sheet.getRange(1, 1, 1, Math.max(lastCol, 1)).getValues()[0].map(String);
+  const need = ["FotoUrl"];
+  const toAdd = need.filter(function(h) { return headers.indexOf(h) === -1; });
+  if (toAdd.length > 0) {
+    sheet.getRange(1, headers.length + 1, 1, toAdd.length).setValues([toAdd]);
+  }
+  return sheet;
+}
+
+// Peta cepat PegawaiID -> FotoUrl, dipakai untuk memperkaya data petugas/resepsionis yang
+// ditampilkan di Kiosk & Dashboard tanpa perlu request terpisah per orang.
+function getFotoUrlMap_() {
+  const map = {};
+  try {
+    const sheet = ensureUsersExtraColumns_();
+    if (!sheet || sheet.getLastRow() <= 1) return map;
+    const rows = sheet.getDataRange().getValues();
+    const headers = rows[0].map(String);
+    const idxFoto = getHeaderIndex(headers, "FotoUrl");
+    if (idxFoto < 0) return map;
+    for (let i = 1; i < rows.length; i++) {
+      const id = String(rows[i][0] || "");
+      if (id) map[id] = String(rows[i][idxFoto] || "");
+    }
+  } catch (e) { /* abaikan, kembalikan map kosong */ }
+  return map;
+}
+
 // ─── AUTENTIKASI PETUGAS (LOGIN VIA USERNAME + PASSWORD) ─
 // Password kini benar-benar divalidasi (dibandingkan dengan kolom Password di sheet Users),
 // supaya fitur "Edit Profil / Ganti Password" berarti. Ada fallback darurat kalau sheet Users
@@ -458,9 +495,11 @@ function loginPetugas(username, password) {
 
     // 1. Cek di Sheet Users (sumber utama, termasuk superadmin/admin/resepsionis)
     try {
-      const sheet = getSheet(SHEET_USERS);
+      const sheet = ensureUsersExtraColumns_();
       if (sheet && sheet.getLastRow() > 1) {
         const data = sheet.getDataRange().getValues();
+        const headers = data[0].map(String);
+        const idxFoto = getHeaderIndex(headers, "FotoUrl");
         const cleanInput = inputUser.replace(/[^a-z0-9]/g, "");
 
         for (let i = 1; i < data.length; i++) {
@@ -470,6 +509,7 @@ function loginPetugas(username, password) {
           const rowPassword = String(data[i][3] || "");
           const rowRole     = String(data[i][4] || "PETUGAS");
           const rowActive   = data[i][5];
+          const rowFoto     = idxFoto >= 0 ? String(data[i][idxFoto] || "") : "";
 
           if (rowActive === false) continue;
 
@@ -488,7 +528,8 @@ function loginPetugas(username, password) {
                 id:       rowId || "USR_PETUGAS",
                 nama:     rowNama || rawUser,
                 username: rowUsername || rawUser,
-                role:     rowRole
+                role:     rowRole,
+                fotoUrl:  rowFoto
               }
             };
           }
@@ -537,9 +578,11 @@ function getKantorInfo() {
 // Daftar seluruh pegawai (untuk dropdown pemilihan admin & tab Master Pegawai)
 function getEmployeeList() {
   try {
-    const sheet = getSheet(SHEET_USERS);
+    const sheet = ensureUsersExtraColumns_();
     if (!sheet || sheet.getLastRow() <= 1) return { ok: true, data: [] };
     const rows = sheet.getDataRange().getValues();
+    const headers = rows[0].map(String);
+    const idxFoto = getHeaderIndex(headers, "FotoUrl");
     const data = [];
     for (let i = 1; i < rows.length; i++) {
       if (!rows[i][0]) continue;
@@ -549,6 +592,7 @@ function getEmployeeList() {
         username: String(rows[i][2] || ""),
         role:     String(rows[i][4] || "PETUGAS"),
         isActive: rows[i][5] !== false,
+        fotoUrl:  idxFoto >= 0 ? String(rows[i][idxFoto] || "") : "",
       });
     }
     return { ok: true, data: data };
@@ -558,13 +602,13 @@ function getEmployeeList() {
 }
 
 // ─── MASTER PEGAWAI: TAMBAH / EDIT (Admin) ───────────────
-function addEmployee(nama, username, password, role) {
+function addEmployee(nama, username, password, role, fotoUrl) {
   try {
     nama = String(nama || "").trim();
     username = String(username || "").trim();
     if (!nama || !username) return { ok: false, error: "Nama dan username wajib diisi." };
 
-    const sheet = getOrCreateSheet(SHEET_USERS, ["ID","Nama","Username","Password","Role","IsActive"]);
+    const sheet = ensureUsersExtraColumns_();
     const rows = sheet.getDataRange().getValues();
     const uname = username.toLowerCase();
     for (let i = 1; i < rows.length; i++) {
@@ -574,18 +618,21 @@ function addEmployee(nama, username, password, role) {
     }
     const id = "USR_" + Utilities.getUuid().substring(0, 8).toUpperCase();
     const finalRole = role || "PEGAWAI";
-    sheet.appendRow([id, nama, username, password || "bps2025", finalRole, true]);
-    return { ok: true, employee: { id: id, nama: nama, username: username, role: finalRole, isActive: true } };
+    const finalFoto = String(fotoUrl || "").trim();
+    sheet.appendRow([id, nama, username, password || "bps2025", finalRole, true, finalFoto]);
+    return { ok: true, employee: { id: id, nama: nama, username: username, role: finalRole, isActive: true, fotoUrl: finalFoto } };
   } catch (e) {
     return { ok: false, error: e.message };
   }
 }
 
-function updateEmployeeById(id, nama, username, password, role, isActive) {
+function updateEmployeeById(id, nama, username, password, role, isActive, fotoUrl) {
   try {
-    const sheet = getSheet(SHEET_USERS);
+    const sheet = ensureUsersExtraColumns_();
     if (!sheet) return { ok: false, error: "Sheet Users tidak ditemukan." };
     const rows = sheet.getDataRange().getValues();
+    const headers = rows[0].map(String);
+    const idxFoto = getHeaderIndex(headers, "FotoUrl");
     for (let i = 1; i < rows.length; i++) {
       if (String(rows[i][0]) === String(id)) {
         if (nama)     sheet.getRange(i + 1, 2).setValue(nama);
@@ -593,6 +640,7 @@ function updateEmployeeById(id, nama, username, password, role, isActive) {
         if (password) sheet.getRange(i + 1, 4).setValue(password);
         if (role)     sheet.getRange(i + 1, 5).setValue(role);
         if (typeof isActive === "boolean") sheet.getRange(i + 1, 6).setValue(isActive);
+        if (typeof fotoUrl === "string" && idxFoto >= 0) sheet.getRange(i + 1, idxFoto + 1).setValue(fotoUrl.trim());
         return {
           ok: true,
           employee: {
@@ -600,7 +648,8 @@ function updateEmployeeById(id, nama, username, password, role, isActive) {
             nama: nama || String(rows[i][1] || ""),
             username: username || String(rows[i][2] || ""),
             role: role || String(rows[i][4] || "PETUGAS"),
-            isActive: typeof isActive === "boolean" ? isActive : (rows[i][5] !== false)
+            isActive: typeof isActive === "boolean" ? isActive : (rows[i][5] !== false),
+            fotoUrl: typeof fotoUrl === "string" ? fotoUrl.trim() : (idxFoto >= 0 ? String(rows[i][idxFoto] || "") : "")
           }
         };
       }
@@ -783,7 +832,7 @@ function getPetugasTersediaHariIni(tanggal) {
     const periode = t.substring(0, 7); // yyyy-MM dari tanggal
     const bulanan = getJadwalBulanan(periode);
     const harian = getJadwalHarian(t);
-    if (!bulanan.ok) return { ok: false, error: bulanan.error, data: [] };
+    if (!bulanan.ok) return { ok: false, error: bulanan.error, data: [], resepsionis: null };
     // Hanya petugas yang dijadwalkan HARI INI dan tidak sedang menonaktifkan Mode Bertugas-nya
     const harianAktif = (harian.data || []).filter(function(x) { return x.isDutyModeOn !== false; });
     const idsHarian = harianAktif.map(function(x) { return x.id; });
@@ -793,9 +842,27 @@ function getPetugasTersediaHariIni(tanggal) {
     harianAktif.forEach(function(h) {
       if (!tersedia.some(function(x) { return x.id === h.id; })) tersedia.push(h);
     });
-    return { ok: true, tanggal: t, data: tersedia };
+
+    // Perkaya dengan Foto Profil (kalau ada) — dipakai tampilan Kiosk & Dashboard supaya
+    // menampilkan avatar, bukan cuma nama teks.
+    const fotoMap = getFotoUrlMap_();
+    tersedia.forEach(function(p) { p.fotoUrl = fotoMap[p.id] || ""; });
+
+    // Resepsionis yang bertugas bulan ini (dari Jadwal Bulanan) — resepsionis tidak melalui
+    // toggle Mode Bertugas/Jadwal Harian seperti Petugas, jadi statusnya "bertugas" selama
+    // masih tercatat sebagai Resepsionis periode berjalan.
+    let resepsionisData = null;
+    if (bulanan.resepsionis) {
+      resepsionisData = {
+        id: bulanan.resepsionis.id,
+        nama: bulanan.resepsionis.nama,
+        fotoUrl: fotoMap[bulanan.resepsionis.id] || ""
+      };
+    }
+
+    return { ok: true, tanggal: t, data: tersedia, resepsionis: resepsionisData };
   } catch (e) {
-    return { ok: false, error: e.message, data: [] };
+    return { ok: false, error: e.message, data: [], resepsionis: null };
   }
 }
 
@@ -952,11 +1019,13 @@ function getTodayRatingRecap() {
 // FITUR 8 — EDIT / UPDATE PROFIL (ADMIN / RESEPSIONIS / PETUGAS)
 // ════════════════════════════════════════════════════════
 
-function updateProfile(currentUsername, newNama, newUsername, newPassword) {
+function updateProfile(currentUsername, newNama, newUsername, newPassword, newFotoUrl) {
   try {
-    const sheet = getSheet(SHEET_USERS);
+    const sheet = ensureUsersExtraColumns_();
     if (!sheet || sheet.getLastRow() <= 1) return { ok: false, error: "Data pegawai belum di-setup." };
     const rows = sheet.getDataRange().getValues();
+    const headers = rows[0].map(String);
+    const idxFoto = getHeaderIndex(headers, "FotoUrl");
     const cur = String(currentUsername || "").trim().toLowerCase();
 
     for (let i = 1; i < rows.length; i++) {
@@ -966,13 +1035,15 @@ function updateProfile(currentUsername, newNama, newUsername, newPassword) {
         if (newNama)     sheet.getRange(i + 1, 2).setValue(newNama);
         if (newUsername) sheet.getRange(i + 1, 3).setValue(newUsername);
         if (newPassword) sheet.getRange(i + 1, 4).setValue(newPassword);
+        if (typeof newFotoUrl === "string" && idxFoto >= 0) sheet.getRange(i + 1, idxFoto + 1).setValue(newFotoUrl.trim());
         return {
           ok: true,
           user: {
             id:       String(rows[i][0] || ""),
             nama:     newNama || String(rows[i][1] || ""),
             username: newUsername || String(rows[i][2] || ""),
-            role:     String(rows[i][4] || "PETUGAS")
+            role:     String(rows[i][4] || "PETUGAS"),
+            fotoUrl:  typeof newFotoUrl === "string" ? newFotoUrl.trim() : (idxFoto >= 0 ? String(rows[i][idxFoto] || "") : "")
           }
         };
       }
