@@ -7,7 +7,7 @@
 //   https://docs.google.com/spreadsheets/d/[SPREADSHEET_ID]/edit
 // ============================================================
 
-const SPREADSHEET_ID = "{EDIT ID SPREADSHEET ANDA}-tc";
+const SPREADSHEET_ID = "Kode ID Spreadsheet";
 const SHEET_QUEUE    = "Queue";
 const SHEET_CONFIG   = "Config";
 const SHEET_USERS    = "Users";
