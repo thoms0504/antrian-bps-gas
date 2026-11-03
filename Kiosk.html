@@ -4,791 +4,223 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kiosk Antrian — PST BPS</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --primary: #1a56db;
-    --secondary: #0ea5e9;
-    --accent: #f59e0b;
-    --success: #10b981;
-    --danger: #ef4444;
-  }
-  body {
-    font-family: 'Inter', sans-serif;
-    background: #0f172a;
-    color: #f1f5f9;
-    min-height: 100vh;
-    overflow: hidden;
-  }
-  /* Header */
-  .header {
-    background: linear-gradient(90deg, #1a56db, #0ea5e9);
-    padding: 18px 40px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-  }
-  .header-left { display: flex; align-items: center; gap: 16px; }
-  .header-logo {
-    width: 52px; height: 52px; background: rgba(255,255,255,0.2);
-    border-radius: 14px; display: flex; align-items: center;
-    justify-content: center; font-size: 24px;
-    border: 2px solid rgba(255,255,255,0.3);
-  }
-  .header-title h1 { font-size: 20px; font-weight: 800; }
-  .header-title p { font-size: 13px; opacity: 0.8; }
-  .header-clock { text-align: right; }
-  .clock-time { font-size: 32px; font-weight: 900; font-variant-numeric: tabular-nums; }
-  .clock-date { font-size: 13px; opacity: 0.8; }
-
-  /* Main layout: 2 Columns */
-  .main {
-    display: grid;
-    grid-template-columns: 1fr 1.2fr;
-    gap: 0;
-    height: calc(100vh - 88px - 40px);
-    overflow: hidden;
-  }
-
-
-  .qr-center-panel {
-    background: #0f172a;
-    padding: 30px 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    border-right: 1px solid rgba(255,255,255,0.08);
-  }
-  .qr-center-card {
-    background: linear-gradient(145deg, #1e293b, #0f172a);
-    border: 2px solid #0ea5e9;
-    border-radius: 24px;
-    padding: 24px 20px;
-    box-shadow: 0 0 40px rgba(14,165,233,0.25);
-    display: flex; flex-direction: column; align-items: center;
-    animation: qrGlow 3s infinite alternate ease-in-out;
-    width: 100%; max-width: 320px;
-  }
-  @keyframes qrGlow {
-    0% { box-shadow: 0 0 25px rgba(14,165,233,0.2); border-color: #0ea5e9; }
-    100% { box-shadow: 0 0 45px rgba(14,165,233,0.5); border-color: #38bdf8; }
-  }
-  .qr-big-img {
-    width: 280px; height: 280px;
-    border-radius: 16px;
-    background: white;
-    padding: 10px;
-    border: 3px solid #0ea5e9;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-  }
-  .qr-title {
-    font-size: 16px; font-weight: 800; color: #38bdf8;
-    margin-top: 16px; letter-spacing: 0.5px;
-  }
-  .qr-subtitle {
-    font-size: 12px; color: #94a3b8; margin-top: 6px;
-    line-height: 1.4; max-width: 240px;
-  }
-  .qr-badge {
-    margin-top: 14px; background: rgba(14,165,233,0.15);
-    border: 1px solid rgba(14,165,233,0.3); color: #38bdf8;
-    font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 999px;
-    display: inline-flex; align-items: center; gap: 6px;
-  }
-
-  /* Column 3: Queue list */
-  .queue-panel {
-    background: #1e293b;
-    padding: 24px 20px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-  }
-  .queue-panel-title {
-    font-size: 12px; font-weight: 700; letter-spacing: 3px;
-    text-transform: uppercase; color: #94a3b8;
-    margin-bottom: 16px; padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .queue-count {
-    background: var(--primary); color: white;
-    font-size: 11px; font-weight: 700; padding: 3px 10px;
-    border-radius: 999px;
-  }
-
-  .staff-on-duty-panel {
-    background: rgba(16,185,129,0.06);
-    border: 1px solid rgba(16,185,129,0.18);
-    border-radius: 12px;
-    padding: 14px 14px 6px;
-    margin-bottom: 16px;
-  }
-  .staff-on-duty-label {
-    font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-    color: #34d399; display: block; margin-bottom: 10px;
-  }
-  /* Daftar staf bertugas ditata VERTIKAL (satu baris per orang) supaya panel bisa
-     memanjang ke bawah mengikuti jumlah staf, bukan dipepetkan jadi chip sempit. */
-  .staff-card {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 8px 8px 6px; border-radius: 10px;
-    background: rgba(255,255,255,0.03);
-    margin-bottom: 8px;
-  }
-  .staff-avatar {
-    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
-    background-color: rgba(16,185,129,0.22); background-size: cover; background-position: center;
-    border: 1.5px solid rgba(16,185,129,0.4);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 14px; color: #34d399;
-  }
-  .staff-card.role-resepsionis .staff-avatar {
-    background-color: rgba(14,165,233,0.22); border-color: rgba(14,165,233,0.45); color: #38bdf8;
-  }
-  .staff-info { min-width: 0; flex: 1; }
-  .staff-name {
-    font-size: 13.5px; font-weight: 700; color: #f1f5f9;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .staff-role {
-    font-size: 10.5px; color: #34d399; text-transform: uppercase; letter-spacing: .04em;
-    font-weight: 700; margin-top: 1px;
-  }
-  .staff-card.role-resepsionis .staff-role { color: #38bdf8; }
-  .queue-item {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 14px; border-radius: 12px;
-    margin-bottom: 8px; background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.06);
-    transition: all 0.3s;
-    animation: fadeInItem 0.4s ease;
-  }
-  @keyframes fadeInItem {
-    from { opacity:0; transform: translateX(20px); }
-    to   { opacity:1; transform: translateX(0); }
-  }
-  .queue-item:hover { background: rgba(255,255,255,0.07); }
-  .queue-item.in-service {
-    background: rgba(16,185,129,0.10);
-    border-color: rgba(16,185,129,0.25);
-  }
-  .queue-ticket-box {
-    min-width: 52px; height: 52px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 15px; font-weight: 800;
-    background: rgba(26,86,219,0.2); color: #60a5fa;
-    border: 1px solid rgba(26,86,219,0.3);
-    flex-shrink: 0;
-  }
-  .queue-ticket-box.in-service {
-    background: rgba(16,185,129,0.2); color: #34d399;
-    border-color: rgba(16,185,129,0.3);
-  }
-  .queue-info { flex: 1; min-width: 0; }
-  .queue-info .q-name {
-    font-size: 13px; font-weight: 600; color: #f1f5f9;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .queue-info .q-sub {
-    font-size: 11px; color: #64748b; margin-top: 2px;
-  }
-  .q-status {
-    font-size: 11px; font-weight: 700; padding: 3px 8px;
-    border-radius: 6px; flex-shrink: 0;
-    background: rgba(26,86,219,0.2); color: #60a5fa;
-  }
-  .q-status.in-service { background: rgba(16,185,129,0.2); color: #34d399; }
-
-  /* Done list */
-  .done-section { margin-top: 20px; }
-  .done-title {
-    font-size: 11px; font-weight: 600; color: #475569;
-    text-transform: uppercase; letter-spacing: 2px;
-    margin-bottom: 8px; padding-top: 12px;
-    border-top: 1px solid rgba(255,255,255,0.04);
-  }
-  .done-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 10px; border-radius: 8px; margin-bottom: 4px;
-    opacity: 0.5;
-  }
-  .done-ticket { font-size: 13px; font-weight: 700; color: #475569; }
-  .done-name { font-size: 12px; color: #475569;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .done-check { color: #10b981; font-size: 14px; margin-left: auto; }
-
-  /* Modal Pop-up untuk Sedang Dilayani */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(15, 23, 42, 0.85);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
-  }
-  .modal-overlay.active {
-    display: flex;
-    animation: fadeInModal 0.3s ease;
-  }
-  @keyframes fadeInModal {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  .modal-card {
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    border: 3px solid #10b981;
-    border-radius: 28px;
-    padding: 40px;
-    text-align: center;
-    max-width: 600px;
-    width: 90%;
-    box-shadow: 0 0 60px rgba(16, 185, 129, 0.4);
-    position: relative;
-    animation: scaleUpModal 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  @keyframes scaleUpModal {
-    from { transform: scale(0.85); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-  }
-  .modal-icon {
-    font-size: 64px;
-    margin-bottom: 20px;
-    animation: bounceIcon 1.5s infinite alternate ease-in-out;
-  }
-  @keyframes bounceIcon {
-    from { transform: translateY(0); }
-    to { transform: translateY(-10px); }
-  }
-  .modal-label {
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 4px;
-    color: #94a3b8;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-  }
-  .modal-ticket {
-    font-size: 96px;
-    font-weight: 900;
-    line-height: 1;
-    background: linear-gradient(135deg, #10b981, #34d399);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 16px;
-    filter: drop-shadow(0 0 20px rgba(16,185,129,0.3));
-  }
-  .modal-name {
-    font-size: 28px;
-    font-weight: 800;
-    color: #f1f5f9;
-    margin-bottom: 16px;
-  }
-  .modal-petugas-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(16,185,129,0.15);
-    border: 1px solid rgba(16,185,129,0.3);
-    color: #10b981;
-    padding: 8px 24px;
-    border-radius: 999px;
-    font-size: 14px;
-    font-weight: 700;
-  }
-  .modal-close-hint {
-    font-size: 12px;
-    color: #64748b;
-    margin-top: 30px;
-  }
-  .modal-close-btn {
-    position: absolute; top: 16px; right: 16px;
-    width: 38px; height: 38px; border-radius: 50%;
-    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-    color: #94a3b8; font-size: 18px; font-weight: 700; line-height: 1; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
-  }
-  .modal-close-btn:hover {
-    background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.4); color: #ef4444;
-    transform: scale(1.08);
-  }
-
-  /* ── Modal Penilaian (Rating) di Kiosk ── */
-  .rating-kiosk-card { border-color: #f59e0b; box-shadow: 0 0 60px rgba(245,158,11,0.35); }
-  .rating-kiosk-name { font-size: 24px; font-weight: 800; color: #f1f5f9; margin: 6px 0 2px; }
-  .rating-kiosk-ticket { font-size: 14px; color: #94a3b8; margin-bottom: 20px; font-weight: 700; }
-  .rating-kiosk-stars { display: flex; justify-content: center; gap: 14px; margin-bottom: 26px; }
-  .rk-star {
-    font-size: 52px; cursor: pointer; filter: grayscale(1) opacity(0.35);
-    transition: transform 0.15s; line-height: 1;
-  }
-  .rk-star.active { filter: none; transform: scale(1.15); }
-  .rk-star:hover { transform: scale(1.2); filter: none; }
-  .rating-kiosk-submit {
-    width: 100%; padding: 16px; border: none; border-radius: 14px; margin-bottom: 10px;
-    background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #1e293b;
-    font-size: 17px; font-weight: 800; cursor: pointer; transition: transform 0.15s;
-  }
-  .rating-kiosk-submit:hover { transform: translateY(-2px); }
-  .rating-kiosk-skip {
-    width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px;
-    background: transparent; color: #64748b; font-size: 13px; font-weight: 600; cursor: pointer;
-  }
-
-  /* Footer */
-  .footer-status {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    padding: 10px 24px;
-    background: rgba(15,23,42,0.95);
-    border-top: 1px solid rgba(255,255,255,0.06);
-    display: flex; justify-content: space-between; align-items: center;
-    font-size: 12px; color: #64748b;
-  }
-  .status-dot { display: inline-block; width: 8px; height: 8px;
-    border-radius: 50%; background: #10b981; margin-right: 6px; }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#0b1220;--panel:#111a2e;--line:rgba(148,163,184,.14);--text:#f1f5f9;--muted:#94a3b8;--faint:#64748b;
+    --accent:#60a5fa;--accent-bg:rgba(96,165,250,.14);--ok:#34d399;--ok-bg:rgba(52,211,153,.13);--warn:#fbbf24}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased}
+  .ic{width:1.15em;height:1.15em;flex-shrink:0;vertical-align:-.2em}
+  .header{display:flex;justify-content:space-between;align-items:center;padding:16px 36px;background:var(--panel);border-bottom:1px solid var(--line);height:80px}
+  .brand{display:flex;align-items:center;gap:14px}
+  .mark{width:44px;height:44px;border-radius:10px;background:#1e40af;display:flex;align-items:center;justify-content:center;font-size:22px}
+  .brand h1{font-size:19px;font-weight:700;letter-spacing:-.01em}.brand p{font-size:13px;color:var(--muted)}
+  .clock{text-align:right}.clock-time{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}.clock-date{font-size:13px;color:var(--muted)}
+  .main{display:grid;grid-template-columns:minmax(340px,.9fr) 1.3fr;height:calc(100vh - 80px - 40px)}
+  .qr-panel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:28px;border-right:1px solid var(--line);text-align:center}
+  .qr-wrap{width:300px;height:300px;background:#fff;border-radius:16px;padding:14px}
+  .qr-wrap img{width:100%;height:100%;display:block}
+  .qr-panel h2{font-size:20px;font-weight:700}.qr-panel p{font-size:14px;color:var(--muted);max-width:300px;line-height:1.5}
+  .list-panel{padding:24px 28px;overflow-y:auto}
+  .sec-title{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:12px}
+  .count{background:var(--accent-bg);color:var(--accent);font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px}
+  .duty{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:22px;background:var(--panel)}
+  .staff{display:flex;align-items:center;gap:12px;padding:7px 0}
+  .staff+.staff{border-top:1px solid var(--line)}
+  .av{width:38px;height:38px;border-radius:50%;background:var(--ok-bg) center/cover;color:var(--ok);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+  .staff.recep .av{background-color:var(--accent-bg);color:var(--accent)}
+  .staff b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .staff small{font-size:12px;color:var(--muted)}
+  .q{display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--panel)}
+  .q-no{min-width:60px;height:46px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px}
+  .q-info{flex:1;min-width:0}.q-name{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.q-sub{font-size:12.5px;color:var(--faint)}
+  .q-pos{font-size:12.5px;font-weight:600;color:var(--muted)}
+  .empty{text-align:center;color:var(--faint);padding:36px 0;font-size:14px}.empty .ic{font-size:30px;display:block;margin:0 auto 8px}
+  .done-title{margin-top:26px;padding-top:16px;border-top:1px solid var(--line)}
+  .done{display:flex;align-items:center;gap:10px;padding:6px 2px;font-size:13px;color:var(--faint)}
+  .done b{color:var(--muted);font-weight:600}.done .ic{margin-left:auto;color:var(--ok)}
+  .overlay{display:none;position:fixed;inset:0;background:rgba(5,10,20,.82);backdrop-filter:blur(8px);z-index:100;align-items:center;justify-content:center}
+  .overlay.active{display:flex}
+  .modal{position:relative;width:min(640px,92%);background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:44px 40px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+  .modal-ic{width:60px;height:60px;border-radius:50%;background:var(--ok-bg);color:var(--ok);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:28px}
+  .modal-label{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px}
+  .modal-ticket{font-size:110px;font-weight:800;line-height:1;letter-spacing:-.04em;color:var(--ok);margin:6px 0 10px}
+  .modal-name{font-size:28px;font-weight:700;margin-bottom:10px}
+  .modal-hint{font-size:16px;color:var(--accent);margin-bottom:18px}
+  .pill{display:inline-flex;align-items:center;gap:8px;background:var(--ok-bg);color:var(--ok);padding:7px 18px;border-radius:999px;font-size:14px;font-weight:600}
+  .x{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .x:hover{color:#fff;background:rgba(255,255,255,.08)}
+  .rk-stars{display:flex;justify-content:center;gap:10px;margin:20px 0 24px}
+  .rk{background:none;border:0;color:#334155;font-size:52px;cursor:pointer;transition:color .12s,transform .12s;line-height:1}
+  .rk:hover{transform:scale(1.1)}.rk.active{color:var(--warn)}
+  .btn{width:100%;padding:15px;border-radius:10px;font:inherit;font-size:16px;font-weight:700;cursor:pointer;border:1px solid transparent}
+  .btn-p{background:#2563eb;color:#fff;margin-bottom:10px}.btn-p:hover{background:#1d4ed8}
+  .btn-g{background:transparent;border-color:var(--line);color:var(--muted);font-size:14px;font-weight:600}
+  .foot{position:fixed;bottom:0;left:0;right:0;height:40px;padding:0 28px;display:flex;justify-content:space-between;align-items:center;background:var(--panel);border-top:1px solid var(--line);font-size:12px;color:var(--faint)}
+  .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:8px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
+<?!= include('Icons') ?>
 
-<!-- Modal Panggilan Sedang Dilayani -->
-<div class="modal-overlay" id="calledModal">
-  <div class="modal-card">
-    <button class="modal-close-btn" onclick="closeCalledModal()" aria-label="Tutup pop-up">✕</button>
-    <div class="modal-icon">🔔</div>
-    <div class="modal-label">PELAYANAN SEDANG BERLANGSUNG</div>
-    <div class="modal-ticket" id="modalTicket">P-01</div>
-    <div class="modal-name" id="modalName">Thomson Sibuea</div>
-    <div style="font-size: 16px; font-weight: 700; color: #38bdf8; margin: 12px 0 16px;">
-      Silakan Memasuki Ruang Pelayanan Statistik Terpadu
-    </div>
-    <div>
-      <span class="modal-petugas-badge">
-        <span class="dot-live"></span>
-        <span id="modalPetugas">Petugas PST</span>
-      </span>
-    </div>
-    <div class="modal-close-hint">Klik ✕ untuk menutup, atau otomatis tertutup saat pelayanan selesai</div>
+<div class="overlay" id="calledModal">
+  <div class="modal">
+    <button class="x" onclick="closeCalledModal()" aria-label="Tutup"><svg class="ic"><use href="#i-close"/></svg></button>
+    <div class="modal-ic"><svg class="ic"><use href="#i-bell"/></svg></div>
+    <div class="modal-label">Pelayanan sedang berlangsung</div>
+    <div class="modal-ticket" id="modalTicket">—</div>
+    <div class="modal-name" id="modalName">—</div>
+    <div class="modal-hint">Silakan memasuki ruang Pelayanan Statistik Terpadu</div>
+    <span class="pill"><svg class="ic"><use href="#i-badge"/></svg><span id="modalPetugas">Petugas PST</span></span>
   </div>
 </div>
 
-<!-- Modal Penilaian (muncul otomatis begitu sebuah tiket baru saja selesai dilayani) -->
-<div class="modal-overlay" id="ratingKioskModal">
-  <div class="modal-card rating-kiosk-card">
-    <button class="modal-close-btn" onclick="dismissRatingPrompt()" aria-label="Tutup">✕</button>
-    <div class="modal-icon">⭐</div>
-    <div class="modal-label">BAGAIMANA PELAYANAN KAMI?</div>
-    <div class="rating-kiosk-name" id="ratingKioskName">—</div>
-    <div class="rating-kiosk-ticket" id="ratingKioskTicket">—</div>
-    <div class="rating-kiosk-stars" id="ratingKioskStars">
-      <span class="rk-star" data-val="1" onclick="selectKioskStar(1)">⭐</span>
-      <span class="rk-star" data-val="2" onclick="selectKioskStar(2)">⭐</span>
-      <span class="rk-star" data-val="3" onclick="selectKioskStar(3)">⭐</span>
-      <span class="rk-star" data-val="4" onclick="selectKioskStar(4)">⭐</span>
-      <span class="rk-star" data-val="5" onclick="selectKioskStar(5)">⭐</span>
+<div class="overlay" id="ratingKioskModal">
+  <div class="modal">
+    <button class="x" onclick="dismissRatingPrompt()" aria-label="Tutup"><svg class="ic"><use href="#i-close"/></svg></button>
+    <div class="modal-label">Bagaimana pelayanan kami?</div>
+    <div class="modal-name" id="ratingKioskName" style="margin-top:6px">—</div>
+    <div class="q-sub" id="ratingKioskTicket">—</div>
+    <div class="rk-stars" id="ratingKioskStars">
+      <button class="rk" data-val="1" onclick="selectKioskStar(1)" aria-label="1 bintang"><svg class="ic" style="width:1em;height:1em"><use href="#i-star"/></svg></button>
+      <button class="rk" data-val="2" onclick="selectKioskStar(2)" aria-label="2 bintang"><svg class="ic" style="width:1em;height:1em"><use href="#i-star"/></svg></button>
+      <button class="rk" data-val="3" onclick="selectKioskStar(3)" aria-label="3 bintang"><svg class="ic" style="width:1em;height:1em"><use href="#i-star"/></svg></button>
+      <button class="rk" data-val="4" onclick="selectKioskStar(4)" aria-label="4 bintang"><svg class="ic" style="width:1em;height:1em"><use href="#i-star"/></svg></button>
+      <button class="rk" data-val="5" onclick="selectKioskStar(5)" aria-label="5 bintang"><svg class="ic" style="width:1em;height:1em"><use href="#i-star"/></svg></button>
     </div>
-    <button class="rating-kiosk-submit" onclick="submitKioskRating()">Kirim Penilaian</button>
-    <button class="rating-kiosk-skip" onclick="dismissRatingPrompt()">Lewati</button>
-    <div class="modal-close-hint">Tertutup otomatis dalam beberapa detik</div>
+    <button class="btn btn-p" onclick="submitKioskRating()">Kirim penilaian</button>
+    <button class="btn btn-g" onclick="dismissRatingPrompt()">Lewati</button>
   </div>
 </div>
 
 <div class="header">
-  <div class="header-left">
-    <div class="header-logo">📊</div>
-    <div class="header-title">
-      <h1 id="kantorNama">PST BPS — Sistem Antrian</h1>
-      <p>Pelayanan Statistik Terpadu</p>
-    </div>
-  </div>
-  <div class="header-clock">
-    <div class="clock-time" id="clockTime">00:00:00</div>
-    <div class="clock-date" id="clockDate">—</div>
-  </div>
+  <div class="brand"><div class="mark"><svg class="ic"><use href="#i-chart"/></svg></div>
+    <div><h1 id="kantorNama">PST BPS — Sistem Antrian</h1><p>Pelayanan Statistik Terpadu</p></div></div>
+  <div class="clock"><div class="clock-time" id="clockTime">00:00:00</div><div class="clock-date" id="clockDate">—</div></div>
 </div>
 
 <div class="main">
-  <!-- Column 1: QR Code Panel Besar -->
-  <div class="qr-center-panel">
-    <div class="qr-center-card">
-      <img id="kioskQrImg" class="qr-big-img" src="" alt="QR Code Daftar Hadir">
-      <div class="qr-title">📱 SCAN UNTUK DAFTAR ANTRIAN</div>
-      <div class="qr-subtitle">Arahkan kamera HP Anda ke QR Code ini<br>untuk mengisi formulir &amp; mengambil nomor antrian</div>
-      <div class="qr-badge">
-        <span>✨ Pendaftaran Mandiri via HP</span>
-      </div>
-    </div>
+  <div class="qr-panel">
+    <div class="qr-wrap"><img id="kioskQrImg" src="" alt="QR Code pendaftaran antrian"></div>
+    <div><h2>Pindai untuk mengambil antrian</h2>
+    <p style="margin-top:6px">Arahkan kamera HP ke kode ini, isi formulir, lalu ambil nomor antrian Anda.</p></div>
   </div>
-
-  <!-- Column 2: Queue list (Menunggu & Selesai) -->
-  <div class="queue-panel">
-    <div class="staff-on-duty-panel" id="staffOnDutyPanel">
-      <span class="staff-on-duty-label">👥 Sedang Bertugas</span>
-      <div id="staffOnDutyList">Memuat...</div>
+  <div class="list-panel">
+    <div class="duty">
+      <div class="sec-title" style="margin-bottom:6px"><span>Sedang bertugas</span></div>
+      <div id="staffOnDutyList">Memuat…</div>
     </div>
-
-    <div class="queue-panel-title">
-      📋 Antrian Menunggu
-      <span class="queue-count" id="waitingCount">0</span>
-    </div>
+    <div class="sec-title"><span>Antrian menunggu</span><span class="count" id="waitingCount">0</span></div>
     <div id="waitingList"></div>
-
-    <div class="done-section">
-      <div class="done-title">✓ Selesai Dilayani</div>
-      <div id="doneList"></div>
-    </div>
+    <div class="sec-title done-title"><span>Selesai dilayani</span></div>
+    <div id="doneList"></div>
   </div>
 </div>
 
-<div class="footer-status">
-  <span><span class="status-dot"></span>Sistem aktif — auto-refresh setiap 5 detik</span>
-  <span id="lastRefresh">—</span>
-</div>
+<div class="foot"><span><span class="dot"></span>Sistem aktif · diperbarui otomatis setiap 5 detik</span><span id="lastRefresh">—</span></div>
 
 <script>
-  // Clock
-  function updateClock() {
-    const now = new Date();
-    document.getElementById('clockTime').textContent =
-      now.toLocaleTimeString('id-ID', { hour12: false });
-    document.getElementById('clockDate').textContent =
-      now.toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  function updateClock(){const n=new Date();
+    document.getElementById('clockTime').textContent=n.toLocaleTimeString('id-ID',{hour12:false});
+    document.getElementById('clockDate').textContent=n.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}
+  setInterval(updateClock,1000); updateClock();
+
+  let activeServing=null, currentAudio=null;
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function showCallModal(t,n,p){document.getElementById('modalTicket').textContent=t;document.getElementById('modalName').textContent=n;
+    document.getElementById('modalPetugas').textContent=p||'Petugas PST';document.getElementById('calledModal').classList.add('active');}
+  function hideCallModal(){document.getElementById('calledModal').classList.remove('active');}
+  function closeCalledModal(){hideCallModal();
+    if(currentAudio){try{currentAudio.pause();currentAudio.currentTime=0;}catch(e){} currentAudio=null;}
+    if('speechSynthesis' in window) window.speechSynthesis.cancel();}
+
+  // ── Penilaian di kiosk ──
+  const RATING_WINDOW_MS=3*60*1000, RATING_AUTOCLOSE_MS=25000;
+  let ratedShown={}, currentRatingEntry=null, ratingStars=0, ratingTimer=null;
+  function maybeShowRatingPrompt(done){
+    if(currentRatingEntry||document.getElementById('calledModal').classList.contains('active'))return;
+    const now=Date.now();
+    const c=done.find(function(e){ if(e.rating||ratedShown[e.id]||!e.selesaiTs)return false;
+      const t=new Date(String(e.selesaiTs).replace(' ','T')).getTime(); return !isNaN(t)&&(now-t)<=RATING_WINDOW_MS; });
+    if(c){ratedShown[c.id]=true;showRatingPrompt(c);}
   }
-  setInterval(updateClock, 1000); updateClock();
-
-  // TTS Suara Bahasa Indonesia (Travis TTS API + Web Speech API Fallback)
-  // activeServing: { id, ticket, callSeq } dari entri IN_SERVICE yang sedang ditampilkan di modal.
-  let activeServing = null;
-  // Referensi audio TTS yang sedang diputar, agar bisa dihentikan saat modal ditutup manual.
-  let currentAudio = null;
-
-  function showCallModal(ticket, name, petugas) {
-    document.getElementById('modalTicket').textContent = ticket;
-    document.getElementById('modalName').textContent = name;
-    document.getElementById('modalPetugas').textContent = petugas || 'Petugas PST';
-    document.getElementById('calledModal').classList.add('active');
-    // Catatan: modal TIDAK auto-hide lagi. Modal tetap tampil selama status masih IN_SERVICE,
-    // dan otomatis hilang saat pelayanan selesai (lihat renderQueue()).
-  }
-
-  function hideCallModal() {
-    document.getElementById('calledModal').classList.remove('active');
-  }
-
-  // Ditekan lewat tombol ✕ di pojok modal: menutup pop-up + menghentikan suara yang sedang
-  // diputar, TANPA mereset activeServing — sehingga modal tidak langsung terbuka lagi pada
-  // polling berikutnya untuk tiket yang sama, kecuali dipanggil ulang (CallSeq naik) atau
-  // ada tiket lain yang mulai dilayani.
-  function closeCalledModal() {
-    hideCallModal();
-    if (currentAudio) {
-      try { currentAudio.pause(); currentAudio.currentTime = 0; } catch (e) { /* abaikan */ }
-      currentAudio = null;
-    }
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-  }
-
-  // ════════════════════════════════════════════════════════
-  // MODAL PENILAIAN (RATING) DI KIOSK
-  // ════════════════════════════════════════════════════════
-  // Muncul otomatis begitu sebuah tiket baru saja berstatus DONE dan belum dinilai —
-  // supaya pengunjung yang masih ada di area kantor (mis. di dekat kiosk) bisa langsung
-  // memberi rating tanpa harus membuka HP. Hanya memunculkan tiket yang SELESAI dalam
-  // beberapa menit terakhir (bukan tiket lama yang kebetulan belum dinilai), dan tidak
-  // menumpuk dengan pop-up "Sedang Dilayani" yang sedang tampil.
-  const RATING_PROMPT_WINDOW_MS = 3 * 60 * 1000; // hanya untuk yang selesai ≤3 menit lalu
-  const RATING_PROMPT_AUTOCLOSE_MS = 25000;      // tertutup otomatis kalau tak disentuh
-  let ratedPromptShownIds = {};
-  let currentRatingEntry = null;
-  let ratingSelectedStars = 0;
-  let ratingPromptTimeoutHandle = null;
-
-  function maybeShowRatingPrompt(doneEntries) {
-    if (currentRatingEntry) return; // sudah ada prompt aktif, jangan tumpuk
-    if (document.getElementById('calledModal').classList.contains('active')) return; // dahulukan pop-up panggilan
-    const now = Date.now();
-    const candidate = doneEntries.find(function(e) {
-      if (e.rating) return false;
-      if (ratedPromptShownIds[e.id]) return false;
-      if (!e.selesaiTs) return false;
-      const selesaiTime = new Date(String(e.selesaiTs).replace(' ', 'T')).getTime();
-      if (isNaN(selesaiTime)) return false;
-      return (now - selesaiTime) <= RATING_PROMPT_WINDOW_MS;
-    });
-    if (candidate) {
-      ratedPromptShownIds[candidate.id] = true;
-      showRatingPrompt(candidate);
-    }
-  }
-
-  function showRatingPrompt(entry) {
-    currentRatingEntry = entry;
-    ratingSelectedStars = 0;
-    document.getElementById('ratingKioskName').textContent = entry.visitorName;
-    document.getElementById('ratingKioskTicket').textContent = entry.ticket;
-    document.querySelectorAll('#ratingKioskStars .rk-star').forEach(function(s) { s.classList.remove('active'); });
+  function showRatingPrompt(e){currentRatingEntry=e;ratingStars=0;
+    document.getElementById('ratingKioskName').textContent=e.visitorName;document.getElementById('ratingKioskTicket').textContent=e.ticket;
+    document.querySelectorAll('#ratingKioskStars .rk').forEach(s=>s.classList.remove('active'));
     document.getElementById('ratingKioskModal').classList.add('active');
-    clearTimeout(ratingPromptTimeoutHandle);
-    ratingPromptTimeoutHandle = setTimeout(dismissRatingPrompt, RATING_PROMPT_AUTOCLOSE_MS);
+    clearTimeout(ratingTimer);ratingTimer=setTimeout(dismissRatingPrompt,RATING_AUTOCLOSE_MS);}
+  function selectKioskStar(v){ratingStars=v;
+    document.querySelectorAll('#ratingKioskStars .rk').forEach(s=>s.classList.toggle('active',parseInt(s.dataset.val)<=v));
+    clearTimeout(ratingTimer);ratingTimer=setTimeout(dismissRatingPrompt,RATING_AUTOCLOSE_MS);}
+  function submitKioskRating(){ if(!currentRatingEntry||!ratingStars)return;
+    google.script.run.withSuccessHandler(dismissRatingPrompt).withFailureHandler(dismissRatingPrompt)
+      .submitRatingWithPetugas(currentRatingEntry.id,ratingStars,'');}
+  function dismissRatingPrompt(){clearTimeout(ratingTimer);document.getElementById('ratingKioskModal').classList.remove('active');currentRatingEntry=null;ratingStars=0;}
+
+  // ── Suara ──
+  function speakTicket(ticket,name){
+    const text='Nomor antrian '+ticket+' atas nama '+name+', silakan memasuki ruang Pelayanan Statistik Terpadu.';
+    fetch('https://travis-tts.statapps.dev/v1/audio/speech',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'tts-1-hd',input:text,response_format:'mp3',speed:0.95})})
+    .then(r=>{if(!r.ok)throw new Error('TTS');return r.blob();})
+    .then(b=>{const a=new Audio(URL.createObjectURL(b));currentAudio=a;a.play().catch(()=>fallbackWebSpeech(text));})
+    .catch(()=>fallbackWebSpeech(text));
   }
+  function fallbackWebSpeech(text){ if(!('speechSynthesis' in window))return; window.speechSynthesis.cancel();
+    const m=new SpeechSynthesisUtterance(text);m.lang='id-ID';m.rate=.85;
+    const v=window.speechSynthesis.getVoices().find(v=>v.lang==='id-ID'||v.lang.startsWith('id')||v.name.toLowerCase().includes('indonesia'));
+    if(v)m.voice=v; window.speechSynthesis.speak(m);}
 
-  function selectKioskStar(val) {
-    ratingSelectedStars = val;
-    document.querySelectorAll('#ratingKioskStars .rk-star').forEach(function(s) {
-      s.classList.toggle('active', parseInt(s.dataset.val) <= val);
-    });
-    // Beri waktu tambahan sebelum auto-tutup begitu pengunjung mulai berinteraksi.
-    clearTimeout(ratingPromptTimeoutHandle);
-    ratingPromptTimeoutHandle = setTimeout(dismissRatingPrompt, RATING_PROMPT_AUTOCLOSE_MS);
-  }
+  let kantorLoaded=false;
+  function loadKantorInfo(){ if(kantorLoaded)return;
+    google.script.run.withSuccessHandler(i=>{if(i&&i.nama)document.getElementById('kantorNama').textContent=i.nama+' — Antrian PST';kantorLoaded=true;}).withFailureHandler(()=>{}).getKantorInfo();}
+  function purposeLabel(p){return {PST:'Konsultasi Data / PST',RAPAT:'Rapat / Kerjasama',LAINNYA:'Keperluan Lainnya'}[p]||p||'—';}
 
-  function submitKioskRating() {
-    if (!currentRatingEntry || ratingSelectedStars === 0) return;
-    const entryId = currentRatingEntry.id;
-    google.script.run
-      .withSuccessHandler(function() { dismissRatingPrompt(); })
-      .withFailureHandler(function() { dismissRatingPrompt(); })
-      .submitRatingWithPetugas(entryId, ratingSelectedStars, '');
-  }
+  function renderQueue(entries){
+    const serving=entries.filter(e=>e.status==='IN_SERVICE'),waiting=entries.filter(e=>e.status==='WAITING'),done=entries.filter(e=>e.status==='DONE');
+    if(serving.length>0){
+      const s=serving.slice().sort((a,b)=>(b.callSeq||0)-(a.callSeq||0))[0];
+      const isNew=!activeServing||activeServing.id!==s.id;
+      const recalled=activeServing&&activeServing.id===s.id&&(s.callSeq||0)>(activeServing.callSeq||0);
+      if(isNew||recalled){showCallModal(s.ticket,s.visitorName,s.petugas);speakTicket(s.ticket,s.visitorName);}
+      activeServing={id:s.id,ticket:s.ticket,callSeq:s.callSeq||0};
+    } else { if(activeServing)hideCallModal(); activeServing=null; }
 
-  function dismissRatingPrompt() {
-    clearTimeout(ratingPromptTimeoutHandle);
-    document.getElementById('ratingKioskModal').classList.remove('active');
-    currentRatingEntry = null;
-    ratingSelectedStars = 0;
-  }
+    document.getElementById('waitingCount').textContent=waiting.length;
+    document.getElementById('waitingList').innerHTML=waiting.length===0
+      ?'<div class="empty"><svg class="ic"><use href="#i-clock"/></svg>Tidak ada antrian menunggu</div>'
+      :waiting.map((e,i)=>'<div class="q"><div class="q-no">'+esc(e.ticket)+'</div><div class="q-info"><div class="q-name">'+esc(e.visitorName)+
+        '</div><div class="q-sub">'+purposeLabel(e.purpose)+' · '+e.visitorCount+' orang</div></div><div class="q-pos">Urutan '+(i+1)+'</div></div>').join('');
 
-  function speakTicket(ticket, name) {
-    const textIndonesian = 'Nomor antrian ' + ticket + ' atas nama ' + name + ', silakan memasuki ruang Pelayanan Statistik Terpadu.';
-
-    // 1. Panggil Travis TTS API (Suara Bahasa Indonesia Sangat Alami & Jernih)
-    fetch('https://travis-tts.statapps.dev/v1/audio/speech', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'tts-1-hd',
-        input: textIndonesian,
-        response_format: 'mp3',
-        speed: 0.95
-      })
-    })
-    .then(res => {
-      if (!res.ok) throw new Error('Travis TTS network error');
-      return res.blob();
-    })
-    .then(blob => {
-      const audioUrl = URL.createObjectURL(blob);
-      const audio = new Audio(audioUrl);
-      currentAudio = audio;
-      audio.play().catch(e => {
-        fallbackWebSpeech(textIndonesian);
-      });
-    })
-    .catch(() => {
-      fallbackWebSpeech(textIndonesian);
-    });
-  }
-
-  function fallbackWebSpeech(text) {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const msg = new SpeechSynthesisUtterance(text);
-    msg.lang = 'id-ID'; msg.rate = 0.85; msg.pitch = 1;
-    const voices = window.speechSynthesis.getVoices();
-    const idVoice = voices.find(v => v.lang === 'id-ID' || v.lang.startsWith('id') || v.name.toLowerCase().includes('indonesia'));
-    if (idVoice) msg.voice = idVoice;
-    window.speechSynthesis.speak(msg);
-  }
-
-  let kantorLoaded = false;
-  function loadKantorInfo() {
-    if (kantorLoaded) return;
-    google.script.run
-      .withSuccessHandler(info => {
-        if (info && info.nama) document.getElementById('kantorNama').textContent = info.nama + ' — Antrian PST';
-        kantorLoaded = true;
-      })
-      .withFailureHandler(() => {})
-      .getKantorInfo();
-  }
-
-  function purposeLabel(p) {
-    const m = { PST:'Konsultasi Data / PST', RAPAT:'Rapat / Kerjasama', LAINNYA:'Keperluan Lainnya' };
-    return m[p] || p || '—';
-  }
-
-  function renderQueue(entries) {
-    const serving  = entries.filter(e => e.status === 'IN_SERVICE');
-    const waiting  = entries.filter(e => e.status === 'WAITING');
-    const done     = entries.filter(e => e.status === 'DONE');
-
-    // Pop-up tetap tampil selama status IN_SERVICE; hilang otomatis saat pelayanan selesai.
-    // "Panggil Ulang" di dashboard menaikkan callSeq → di sini terdeteksi & suara diputar ulang
-    // tanpa perlu menutup lalu membuka modal (modal memang tidak pernah ditutup selama masih dilayani).
-    if (serving.length > 0) {
-      // Pilih yang paling baru dipanggil (callSeq tertinggi), agar kalau ada >1 IN_SERVICE, yang terbaru yang tampil.
-      const s = serving.slice().sort((a, b) => (b.callSeq || 0) - (a.callSeq || 0))[0];
-      const isNewEntry = !activeServing || activeServing.id !== s.id;
-      const isRecalled  = activeServing && activeServing.id === s.id && (s.callSeq || 0) > (activeServing.callSeq || 0);
-
-      if (isNewEntry || isRecalled) {
-        showCallModal(s.ticket, s.visitorName, s.petugas);
-        speakTicket(s.ticket, s.visitorName);
-      }
-      activeServing = { id: s.id, ticket: s.ticket, callSeq: s.callSeq || 0 };
-    } else {
-      // Tidak ada lagi yang IN_SERVICE → tutup pop-up
-      if (activeServing) hideCallModal();
-      activeServing = null;
-    }
-
-    // Waiting list
-    document.getElementById('waitingCount').textContent = waiting.length;
-    const wl = document.getElementById('waitingList');
-    if (waiting.length === 0) {
-      wl.innerHTML = '<div style="text-align:center; color:#475569; padding:40px 0; font-size:14px;"><div style="font-size:50px; margin-bottom:12px;">🕐</div>Tidak ada antrian menunggu</div>';
-    } else {
-      wl.innerHTML = waiting.map((e, idx) => `
-        <div class="queue-item">
-          <div class="queue-ticket-box">${e.ticket}</div>
-          <div class="queue-info">
-            <div class="q-name">${e.visitorName}</div>
-            <div class="q-sub">${purposeLabel(e.purpose)} · ${e.visitorCount} orang</div>
-          </div>
-          <div class="q-status">#${idx+1}</div>
-        </div>
-      `).join('');
-    }
-
-    // Done list (show last 5)
-    const dl = document.getElementById('doneList');
-    const recentDone = done.slice(-5).reverse();
-    if (recentDone.length === 0) {
-      dl.innerHTML = '<div style="font-size:12px; color:#475569; text-align:center; padding:12px 0;">Belum ada antrian selesai</div>';
-    } else {
-      dl.innerHTML = recentDone.map(e => `
-        <div class="done-item">
-          <span class="done-ticket">${e.ticket}</span>
-          <span class="done-name">${e.visitorName}</span>
-          <span class="done-check">✓</span>
-        </div>
-      `).join('');
-    }
-
-    // Cek apakah ada tiket yang baru saja selesai & belum dinilai → tampilkan pop-up rating
+    const recent=done.slice(-5).reverse();
+    document.getElementById('doneList').innerHTML=recent.length===0?'<div class="empty" style="padding:12px 0">Belum ada antrian selesai</div>'
+      :recent.map(e=>'<div class="done"><b>'+esc(e.ticket)+'</b><span>'+esc(e.visitorName)+'</span><svg class="ic"><use href="#i-check"/></svg></div>').join('');
     maybeShowRatingPrompt(done);
+    document.getElementById('lastRefresh').textContent='Diperbarui '+new Date().toLocaleTimeString('id-ID');
+  }
+  function fetchQueue(){google.script.run.withSuccessHandler(r=>{if(r&&r.ok)renderQueue(r.entries);}).withFailureHandler(()=>{}).getQueueToday();}
 
-    // Last refresh
-    const now = new Date();
-    document.getElementById('lastRefresh').textContent =
-      'Diperbarui: ' + now.toLocaleTimeString('id-ID');
+  function initials(n){const p=String(n||'').trim().split(/\s+/).filter(Boolean);if(!p.length)return'?';return p.length===1?p[0].substring(0,2).toUpperCase():(p[0][0]+p[p.length-1][0]).toUpperCase();}
+  function staffCard(p,role,cls){const f=p.fotoUrl&&String(p.fotoUrl).trim();
+    const st=f?' style="background-image:url(\''+String(p.fotoUrl).replace(/'/g,'%27').replace(/"/g,'%22')+'\')"':'';
+    return '<div class="staff '+cls+'"><div class="av"'+st+'>'+(f?'':esc(initials(p.nama)))+'</div><div><b>'+esc(p.nama)+'</b><small>'+role+'</small></div></div>';}
+  function fetchPetugasHariIni(){
+    google.script.run.withSuccessHandler(function(res){
+      const el=document.getElementById('staffOnDutyList'),data=(res&&res.data)||[],r=res&&res.resepsionis;
+      if(!data.length&&!r){el.innerHTML='<span style="color:var(--faint);font-size:13px">Belum ada staf dijadwalkan hari ini</span>';return;}
+      el.innerHTML=(r?staffCard(r,'Resepsionis','recep'):'')+data.map(p=>staffCard(p,'Petugas PST','')).join('');
+    }).withFailureHandler(()=>{}).getPetugasTersediaHariIni(null);
   }
 
-  function fetchQueue() {
-    google.script.run
-      .withSuccessHandler(function(res) {
-        if (res && res.ok) renderQueue(res.entries);
-      })
-      .withFailureHandler(function() {})
-      .getQueueToday();
-  }
+  function renderKioskQr(url){document.getElementById('kioskQrImg').src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=6&qzone=4&ecc=H&data='+encodeURIComponent(url);}
+  function initQrCode(){google.script.run
+    .withSuccessHandler(r=>renderKioskQr((r&&r.ok&&r.url?r.url:location.href.split('?')[0])+'?page=form'))
+    .withFailureHandler(()=>renderKioskQr(location.href.split('?')[0]+'?page=form')).getAppUrl();}
 
-  function fetchPetugasHariIni() {
-    google.script.run
-      .withSuccessHandler(function(res) {
-        const el = document.getElementById('staffOnDutyList');
-        const data = (res && res.data) || [];
-        const resepsionis = res && res.resepsionis;
-
-        if (data.length === 0 && !resepsionis) {
-          el.innerHTML = '<span style="color:#94a3b8; font-weight:500; font-size:13px;">Belum ada staf dijadwalkan hari ini</span>';
-          return;
-        }
-        let html = '';
-        if (resepsionis) html += staffCardHtml(resepsionis, 'Resepsionis', 'role-resepsionis');
-        html += data.map(function(p) { return staffCardHtml(p, 'Petugas PST', 'role-petugas'); }).join('');
-        el.innerHTML = html;
-      })
-      .withFailureHandler(function() {})
-      .getPetugasTersediaHariIni(null);
-  }
-
-  // Ambil inisial (maks. 2 huruf) dari nama, dipakai sebagai avatar fallback saat pegawai
-  // belum mengisi Foto Profil.
-  function staffInitials(nama) {
-    const parts = String(nama || '').trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 0) return '?';
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-
-  // Kartu satu staf (foto profil kalau ada, kalau tidak avatar inisial) + nama + label peran.
-  function staffCardHtml(person, roleLabel, roleClass) {
-    const hasFoto = person.fotoUrl && String(person.fotoUrl).trim() !== '';
-    const avatarStyle = hasFoto
-      ? ' style="background-image:url(\'' + String(person.fotoUrl).replace(/'/g, '%27').replace(/"/g, '%22') + '\');"'
-      : '';
-    const avatarInner = hasFoto ? '' : escKioskHtml(staffInitials(person.nama));
-    return '<div class="staff-card ' + roleClass + '">' +
-      '<div class="staff-avatar"' + avatarStyle + '>' + avatarInner + '</div>' +
-      '<div class="staff-info">' +
-        '<div class="staff-name">' + escKioskHtml(person.nama) + '</div>' +
-        '<div class="staff-role">' + roleLabel + '</div>' +
-      '</div>' +
-    '</div>';
-  }
-
-  function escKioskHtml(str) {
-    return String(str == null ? '' : str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-
-  loadKantorInfo();
-  fetchQueue();
-  fetchPetugasHariIni();
-  setInterval(fetchQueue, 5000);
-  setInterval(fetchPetugasHariIni, 30000);
-
-  // Dynamic QR Code generation for Attendance / Form.
-  // Diperbaiki: sebelumnya URL deployment di-hardcode di sini (jadi harus diubah manual
-  // tiap kali di-deploy ulang / dipakai kantor lain). Sekarang diambil otomatis lewat
-  // getAppUrl() (Code.gs) yang membaca ScriptApp.getService().getUrl().
-  function renderKioskQr(targetUrl) {
-    const qrImg = document.getElementById('kioskQrImg');
-    if (qrImg) {
-      qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=6&data=' + encodeURIComponent(targetUrl);
-    }
-  }
-  function initQrCode() {
-    google.script.run
-      .withSuccessHandler(function(res) {
-        if (res && res.ok && res.url) {
-          renderKioskQr(res.url + '?page=form');
-        } else {
-          // Fallback: kalau getAppUrl gagal (mis. dijalankan dari editor/preview),
-          // gunakan URL halaman saat ini sebagai basis.
-          renderKioskQr(location.href.split('?')[0] + '?page=form');
-        }
-      })
-      .withFailureHandler(function() {
-        renderKioskQr(location.href.split('?')[0] + '?page=form');
-      })
-      .getAppUrl();
-  }
-  initQrCode();
-
-  // Preload voices
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-  }
+  loadKantorInfo();fetchQueue();fetchPetugasHariIni();initQrCode();
+  setInterval(fetchQueue,5000);setInterval(fetchPetugasHariIni,30000);
+  if('speechSynthesis' in window){window.speechSynthesis.getVoices();window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();}
 </script>
 </body>
 </html>
