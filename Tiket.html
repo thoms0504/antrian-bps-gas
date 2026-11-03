@@ -4,332 +4,128 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pantau Tiket — PST BPS</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<?!= include('Styles') ?>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --primary: #1a56db; --secondary: #0ea5e9; --success: #10b981;
-    --warning: #f59e0b; --danger: #ef4444;
-    --bg: #f0f4ff; --surface: #ffffff; --text: #1e293b; --text-muted: #64748b;
-    --border: #e2e8f0;
-  }
-  body {
-    font-family: 'Inter', sans-serif;
-    background: linear-gradient(135deg, #1a56db 0%, #0ea5e9 50%, #06b6d4 100%);
-    min-height: 100vh; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; padding: 24px 16px;
-  }
-  .card {
-    background: var(--surface); border-radius: 24px; padding: 36px 32px;
-    width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-    text-align: center; animation: slideUp 0.4s ease;
-  }
-  @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-
-  .kantor-name { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 18px; }
-
-  .status-badge {
-    display: inline-block; padding: 6px 18px; border-radius: 999px;
-    font-size: 12px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-  .status-WAITING { background:#eff6ff; color:var(--primary); }
-  .status-IN_SERVICE { background:#fef3c7; color:#d97706; }
-  .status-DONE { background:#d1fae5; color:#059669; }
-  .status-CANCELLED { background:#fee2e2; color:#dc2626; }
-
-  .ticket-number {
-    font-size: 72px; font-weight: 900; line-height: 1; margin: 8px 0 4px;
-    background: linear-gradient(135deg, #1a56db, #0ea5e9);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  }
-  .visitor-name { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 18px; }
-
-  .status-message {
-    font-size: 14px; font-weight: 600; padding: 14px 16px; border-radius: 12px;
-    margin-bottom: 18px; line-height: 1.5;
-  }
-  .status-message.info { background: var(--bg); color: var(--text); }
-  .status-message.warn { background: #fffbeb; color: #92400e; }
-  .status-message.done { background: #ecfdf5; color: #065f46; }
-
-  .estimasi-box {
-    display: flex; justify-content: space-around; background: var(--bg);
-    border-radius: 12px; padding: 14px; margin-bottom: 18px;
-  }
-  .estimasi-item .num { font-size: 24px; font-weight: 900; color: var(--primary); }
-  .estimasi-item .lbl { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
-
-  .ticket-info { background: var(--bg); border-radius: 12px; padding: 14px 16px; text-align: left; margin-bottom: 18px; }
-  .ticket-info-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
-  .ticket-info-row:last-child { border-bottom: none; }
-  .ticket-info-row .ti-label { color: var(--text-muted); }
-  .ticket-info-row .ti-val { font-weight: 600; color: var(--text); text-align: right; }
-
-  /* Rating */
-  .rating-box { background: var(--bg); border-radius: 16px; padding: 20px; margin-top: 6px; }
-  .rating-box h3 { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
-  .rating-box p { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
-  .stars { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; }
-  .star { font-size: 36px; cursor: pointer; filter: grayscale(1) opacity(0.4); transition: transform .15s; line-height: 1; }
-  .star.active { filter: none; transform: scale(1.12); }
-  .star-label { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; height: 16px; }
-  .rating-box select {
-    width: 100%; padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px;
-    font-size: 13px; font-family: inherit; color: var(--text); background: #fff;
-    outline: none; margin-bottom: 12px; cursor: pointer;
-  }
-  .rating-box label { display: block; text-align: left; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
-  .rating-textarea {
-    width: 100%; padding: 10px 14px; border: 2px solid var(--border); border-radius: 10px;
-    font-size: 13px; font-family: inherit; color: var(--text); background: #fff;
-    outline: none; resize: none; height: 64px; margin-bottom: 14px;
-  }
-  .rating-textarea:focus { border-color: var(--primary); }
-  .btn-rating-submit {
-    width: 100%; padding: 13px; border: none; border-radius: 10px;
-    background: linear-gradient(135deg, var(--warning), #fbbf24); color: #fff;
-    font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s;
-  }
-  .btn-rating-submit:hover { transform: translateY(-1px); }
-  .btn-rating-submit:disabled { opacity: .6; cursor: not-allowed; transform: none; }
-  .rating-thanks { font-size: 13px; color: #065f46; font-weight: 700; }
-
-  .loading-wrap { text-align:center; padding: 30px 0; color: var(--text-muted); }
-  .spinner { width: 34px; height: 34px; border: 4px solid var(--border); border-top-color: var(--primary);
-    border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 14px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .refresh-note { font-size: 11px; color: var(--text-muted); margin-top: 16px; }
+  body{align-items:center}.card{text-align:center}
+  .office{font-size:13px;color:var(--muted);font-weight:500;margin-bottom:16px}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:12.5px;font-weight:600}
+  .pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+  .st-WAITING{background:var(--primary-soft);color:var(--primary)}.st-IN_SERVICE{background:var(--warn-soft);color:var(--warn)}
+  .st-DONE{background:var(--ok-soft);color:var(--ok)}.st-CANCELLED{background:var(--danger-soft);color:var(--danger)}
+  .no{font-size:68px;font-weight:700;letter-spacing:-.03em;line-height:1;margin:14px 0 4px;color:var(--text)}
+  .who{font-size:16px;font-weight:600;margin-bottom:18px}
+  .msg{font-size:14px;padding:12px 14px;border-radius:8px;margin-bottom:16px;text-align:left;border:1px solid var(--border);background:var(--bg)}
+  .msg.warn{background:var(--warn-soft);border-color:#fde68a;color:#78350f}.msg.done{background:var(--ok-soft);border-color:#a7f3d0;color:#065f46}
+  .est{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);border-radius:8px;margin-bottom:16px}
+  .est div{padding:12px}.est div+div{border-left:1px solid var(--border)}
+  .est b{display:block;font-size:26px;font-weight:700;color:var(--primary)}.est span{font-size:12px;color:var(--muted)}
+  .rate{border:1px solid var(--border);border-radius:10px;padding:18px;text-align:left}
+  .rate h3{font-size:15px;font-weight:600}.rate p.h{font-size:12.5px;color:var(--muted);margin:2px 0 12px}
+  .stars{display:flex;justify-content:center;gap:6px;margin-bottom:8px}
+  .star{background:none;border:0;cursor:pointer;color:var(--border-strong);font-size:34px;padding:2px;transition:color .12s}
+  .star.active{color:#f59e0b}
+  .sl{text-align:center;font-size:12.5px;color:var(--muted);height:18px;margin-bottom:10px}
+  .note{font-size:12px;color:var(--muted);margin-top:16px}
 </style>
 </head>
 <body>
-
-<div class="card" id="card">
-  <div class="loading-wrap" id="loadingWrap">
-    <div class="spinner"></div>
-    <p>Memuat data tiket…</p>
-  </div>
-
-  <div id="content" style="display:none;">
-    <div class="kantor-name" id="kantorNama">PST BPS</div>
-    <div class="status-badge" id="statusBadge">—</div>
-    <div class="ticket-number" id="ticketNumber">—</div>
-    <div class="visitor-name" id="visitorName">—</div>
-
-    <div class="status-message" id="statusMessage"></div>
-
-    <div class="estimasi-box" id="estimasiBox" style="display:none;">
-      <div class="estimasi-item">
-        <div class="num" id="antrianDiDepan">0</div>
-        <div class="lbl">ANTRIAN DI DEPAN</div>
-      </div>
-      <div class="estimasi-item">
-        <div class="num" id="estimasiMenit">0</div>
-        <div class="lbl">MENIT (ESTIMASI)</div>
-      </div>
+<?!= include('Icons') ?>
+<div class="card">
+  <div id="loadingWrap" style="padding:28px 0;color:var(--muted)"><span class="spinner" style="border-color:var(--border);border-top-color:var(--primary);width:28px;height:28px;margin-bottom:12px"></span><p>Memuat data tiket…</p></div>
+  <div id="content" style="display:none">
+    <div class="office" id="kantorNama">PST BPS</div>
+    <span class="pill" id="statusBadge">—</span>
+    <div class="no" id="ticketNumber">—</div>
+    <div class="who" id="visitorName">—</div>
+    <div class="msg" id="statusMessage"></div>
+    <div class="est" id="estimasiBox" style="display:none">
+      <div><b id="antrianDiDepan">0</b><span>Antrian di depan</span></div>
+      <div><b id="estimasiMenit">0</b><span>Estimasi (menit)</span></div>
     </div>
-
-    <div class="ticket-info" id="ticketInfo"></div>
-
+    <div class="kv" id="ticketInfo"></div>
     <div id="ratingArea"></div>
-
-    <div class="refresh-note" id="refreshNote">Halaman ini diperbarui otomatis setiap 5 detik.</div>
+    <div class="note" id="refreshNote">Halaman diperbarui otomatis setiap 5 detik.</div>
   </div>
 </div>
-
 <script>
   const ENTRY_ID = <?!= JSON.stringify(entryId || "") ?>;
-  let selectedRating = 0;
-  let lastStatus = null;
-  const STAR_LABELS = ['', 'Sangat Buruk', 'Buruk', 'Cukup', 'Baik', 'Sangat Baik'];
+  let selectedRating=0,lastStatus=null;
+  const STAR_LABELS=['','Sangat buruk','Buruk','Cukup','Baik','Sangat baik'];
+  const STAR='<svg class="ic" viewBox="0 0 24 24" style="width:1em;height:1em"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z" fill="currentColor"/></svg>';
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function purposeLabel(p){return {PST:'Pelayanan Statistik Terpadu',RAPAT:'Rapat / Kerjasama',LAINNYA:'Keperluan Lainnya'}[p]||p||'—';}
+  function statusLabel(s){return {WAITING:'Menunggu',IN_SERVICE:'Sedang dilayani',DONE:'Selesai',CANCELLED:'Dibatalkan'}[s]||s;}
+  function row(k,v){return '<div><span class="k">'+k+'</span><span class="v">'+esc(v)+'</span></div>';}
+  function loadKantorInfo(){google.script.run.withSuccessHandler(function(i){if(i&&i.nama)document.getElementById('kantorNama').textContent=i.nama;}).withFailureHandler(function(){}).getKantorInfo();}
 
-  function purposeLabel(p) {
-    return { PST: 'Pelayanan Statistik Terpadu', RAPAT: 'Rapat / Kerjasama', LAINNYA: 'Keperluan Lainnya' }[p] || p || '—';
-  }
-  function statusLabel(s) {
-    return { WAITING: 'Menunggu', IN_SERVICE: 'Sedang Dilayani', DONE: 'Selesai', CANCELLED: 'Dibatalkan' }[s] || s;
-  }
-  function escHtml(str) {
-    return String(str == null ? '' : str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-
-  function loadKantorInfo() {
-    google.script.run
-      .withSuccessHandler(function(info) {
-        if (info && info.nama) document.getElementById('kantorNama').textContent = info.nama;
-      })
-      .withFailureHandler(function() {})
-      .getKantorInfo();
-  }
-
-  function renderTicket(res) {
-    document.getElementById('loadingWrap').style.display = 'none';
-    document.getElementById('content').style.display = 'block';
-
-    if (!res.ok) {
-      document.getElementById('statusBadge').style.display = 'none';
-      document.getElementById('ticketNumber').textContent = '—';
-      document.getElementById('visitorName').textContent = '';
-      document.getElementById('statusMessage').className = 'status-message warn';
-      document.getElementById('statusMessage').textContent = res.error || 'Tiket tidak ditemukan.';
-      document.getElementById('estimasiBox').style.display = 'none';
-      document.getElementById('ticketInfo').innerHTML = '';
-      document.getElementById('ratingArea').innerHTML = '';
-      document.getElementById('refreshNote').style.display = 'none';
-      return;
+  function renderTicket(res){
+    document.getElementById('loadingWrap').style.display='none';
+    document.getElementById('content').style.display='block';
+    const msg=document.getElementById('statusMessage');
+    if(!res.ok){
+      document.getElementById('statusBadge').style.display='none';
+      document.getElementById('ticketNumber').textContent='—'; document.getElementById('visitorName').textContent='';
+      msg.className='msg warn'; msg.textContent=res.error||'Tiket tidak ditemukan.';
+      ['estimasiBox'].forEach(i=>document.getElementById(i).style.display='none');
+      document.getElementById('ticketInfo').innerHTML=''; document.getElementById('ratingArea').innerHTML='';
+      document.getElementById('refreshNote').style.display='none'; return;
     }
-
-    const e = res.entry;
-    const badge = document.getElementById('statusBadge');
-    badge.style.display = 'inline-block';
-    badge.className = 'status-badge status-' + e.status;
-    badge.textContent = statusLabel(e.status);
-    document.getElementById('ticketNumber').textContent = e.ticket;
-    document.getElementById('visitorName').textContent = e.visitorName;
-
-    const msgEl = document.getElementById('statusMessage');
-    if (e.status === 'WAITING') {
-      msgEl.className = 'status-message info';
-      msgEl.textContent = 'Mohon tunggu, nomor Anda akan dipanggil melalui layar dan suara di kantor.';
-      document.getElementById('estimasiBox').style.display = 'flex';
-      document.getElementById('antrianDiDepan').textContent = res.antrianDiDepan || 0;
-      document.getElementById('estimasiMenit').textContent = res.estimasiMenit || 0;
-    } else if (e.status === 'IN_SERVICE') {
-      msgEl.className = 'status-message warn';
-      msgEl.textContent = '🔔 Sedang dilayani sekarang' + (e.petugas ? ' oleh ' + e.petugas : '') + '. Silakan menuju loket PST.';
-      document.getElementById('estimasiBox').style.display = 'none';
-    } else if (e.status === 'DONE') {
-      msgEl.className = 'status-message done';
-      msgEl.textContent = '✅ Pelayanan telah selesai. Terima kasih atas kunjungan Anda.';
-      document.getElementById('estimasiBox').style.display = 'none';
-    } else {
-      msgEl.className = 'status-message warn';
-      msgEl.textContent = 'Tiket ini telah dibatalkan.';
-      document.getElementById('estimasiBox').style.display = 'none';
-    }
-
-    document.getElementById('ticketInfo').innerHTML = `
-      <div class="ticket-info-row"><span class="ti-label">Tujuan</span><span class="ti-val">${escHtml(purposeLabel(e.purpose))}</span></div>
-      ${e.serviceType ? `<div class="ticket-info-row"><span class="ti-label">Jenis Layanan</span><span class="ti-val">${escHtml(e.serviceType)}</span></div>` : ''}
-      ${e.addressInstansi ? `<div class="ticket-info-row"><span class="ti-label">Instansi</span><span class="ti-val">${escHtml(e.addressInstansi)}</span></div>` : ''}
-      <div class="ticket-info-row"><span class="ti-label">Jumlah Orang</span><span class="ti-val">${e.visitorCount}</span></div>
-    `;
-
+    const e=res.entry, b=document.getElementById('statusBadge');
+    b.style.display='inline-flex'; b.className='pill st-'+e.status; b.textContent=statusLabel(e.status);
+    document.getElementById('ticketNumber').textContent=e.ticket; document.getElementById('visitorName').textContent=e.visitorName;
+    document.getElementById('estimasiBox').style.display='none';
+    if(e.status==='WAITING'){
+      msg.className='msg'; msg.textContent='Mohon tunggu. Nomor Anda akan dipanggil lewat layar dan suara di kantor.';
+      document.getElementById('estimasiBox').style.display='grid';
+      document.getElementById('antrianDiDepan').textContent=res.antrianDiDepan||0; document.getElementById('estimasiMenit').textContent=res.estimasiMenit||0;
+    } else if(e.status==='IN_SERVICE'){ msg.className='msg warn'; msg.textContent='Anda sedang dilayani'+(e.petugas?' oleh '+e.petugas:'')+'. Silakan menuju loket PST.';
+    } else if(e.status==='DONE'){ msg.className='msg done'; msg.textContent='Pelayanan telah selesai. Terima kasih atas kunjungan Anda.';
+    } else { msg.className='msg warn'; msg.textContent='Tiket ini telah dibatalkan.'; }
+    document.getElementById('ticketInfo').innerHTML=row('Tujuan',purposeLabel(e.purpose))+(e.serviceType?row('Jenis layanan',e.serviceType):'')+
+      (e.addressInstansi?row('Instansi',e.addressInstansi):'')+row('Jumlah orang',e.visitorCount);
     renderRatingArea(e);
-
-    if (e.status === 'DONE' || e.status === 'CANCELLED') {
-      document.getElementById('refreshNote').style.display = 'none';
-    }
-    lastStatus = e.status;
+    if(e.status==='DONE'||e.status==='CANCELLED') document.getElementById('refreshNote').style.display='none';
+    lastStatus=e.status;
   }
-
-  function renderRatingArea(e) {
-    const area = document.getElementById('ratingArea');
-    if (e.status !== 'DONE') { area.innerHTML = ''; return; }
-    if (e.rating) {
-      area.innerHTML = `
-        <div class="rating-box">
-          <p class="rating-thanks">⭐ Terima kasih, Anda telah memberi nilai ${e.rating}/5 untuk layanan ini.</p>
-        </div>`;
-      return;
-    }
-    // Belum dinilai — tampilkan form rating
-    area.innerHTML = `
-      <div class="rating-box">
-        <h3>Bagaimana pelayanan kami?</h3>
-        <p>Penilaian Anda membantu kami meningkatkan kualitas layanan PST.</p>
-        <div class="stars" id="starsRow">
-          <span class="star" data-val="1">⭐</span>
-          <span class="star" data-val="2">⭐</span>
-          <span class="star" data-val="3">⭐</span>
-          <span class="star" data-val="4">⭐</span>
-          <span class="star" data-val="5">⭐</span>
-        </div>
-        <div class="star-label" id="starLabel">Ketuk bintang untuk menilai</div>
-        <label>Dinilai untuk petugas</label>
-        <select id="ratingPetugasSelect"><option>Memuat...</option></select>
-        <textarea class="rating-textarea" id="ratingComment" placeholder="Komentar tambahan (opsional)..."></textarea>
-        <button class="btn-rating-submit" id="ratingSubmitBtn">Kirim Penilaian</button>
-      </div>`;
-
-    document.querySelectorAll('#starsRow .star').forEach(function(s) {
-      s.addEventListener('click', function() { selectStar(parseInt(this.dataset.val)); });
-    });
-    document.getElementById('ratingSubmitBtn').addEventListener('click', submitVisitorRating);
-    populateRatingPetugasSelect(e);
+  function renderRatingArea(e){
+    const a=document.getElementById('ratingArea');
+    if(e.status!=='DONE'){a.innerHTML='';return;}
+    if(e.rating){a.innerHTML='<div class="rate"><p style="font-size:13.5px;color:var(--ok);font-weight:600">Terima kasih, Anda memberi nilai '+e.rating+'/5.</p></div>';return;}
+    if(document.getElementById('starsRow')) return; // jangan render ulang saat pengguna sedang mengisi
+    let stars=''; for(let i=1;i<=5;i++) stars+='<button type="button" class="star" data-val="'+i+'" aria-label="'+i+' bintang">'+STAR+'</button>';
+    a.innerHTML='<div class="rate"><h3>Bagaimana pelayanan kami?</h3><p class="h">Penilaian Anda membantu kami meningkatkan layanan PST.</p>'+
+      '<div class="stars" id="starsRow">'+stars+'</div><div class="sl" id="starLabel">Ketuk bintang untuk menilai</div>'+
+      '<div class="field"><label>Dinilai untuk petugas</label><select id="ratingPetugasSelect"><option>Memuat…</option></select></div>'+
+      '<div class="field"><textarea id="ratingComment" style="min-height:64px" placeholder="Komentar tambahan (opsional)"></textarea></div>'+
+      '<button class="btn btn-primary" id="ratingSubmitBtn">Kirim penilaian</button></div>';
+    document.querySelectorAll('#starsRow .star').forEach(s=>s.addEventListener('click',function(){selectStar(parseInt(this.dataset.val));}));
+    document.getElementById('ratingSubmitBtn').addEventListener('click',submitVisitorRating);
+    populatePetugas(e);
   }
-
-  // Isi pilihan "Dinilai untuk petugas": petugas yang tercatat di tiket + pendamping
-  // (multi-petugas) + seluruh petugas yang sedang bertugas hari ini — supaya pengunjung
-  // (atau siapa pun yang membuka tautan ini) bisa memilih dengan benar, berlaku untuk
-  // semua jenis kunjungan (PST maupun Rapat/Lainnya), bukan cuma yang otomatis tercatat.
-  function populateRatingPetugasSelect(e) {
-    const names = [];
-    if (e.petugas) names.push(e.petugas);
-    (e.collaborators || []).forEach(function(c) { if (names.indexOf(c) === -1) names.push(c); });
-
-    function finish() {
-      const sel = document.getElementById('ratingPetugasSelect');
-      if (!sel) return; // form mungkin sudah tidak ada lagi (status berubah lagi saat fetch berjalan)
-      sel.innerHTML = names.length
-        ? names.map(function(n) { return '<option value="' + escHtml(n) + '">' + escHtml(n) + '</option>'; }).join('')
-        : '<option value="">— Tidak diketahui —</option>';
-    }
-
-    google.script.run
-      .withSuccessHandler(function(res) {
-        ((res && res.data) || []).forEach(function(p) { if (names.indexOf(p.nama) === -1) names.push(p.nama); });
-        finish();
-      })
-      .withFailureHandler(finish)
-      .getPetugasTersediaHariIni(null);
+  function populatePetugas(e){
+    const names=[]; if(e.petugas) names.push(e.petugas);
+    (e.collaborators||[]).forEach(c=>{if(names.indexOf(c)===-1)names.push(c);});
+    function finish(){const s=document.getElementById('ratingPetugasSelect'); if(!s)return;
+      s.innerHTML=names.length?names.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join(''):'<option value="">Tidak diketahui</option>';}
+    google.script.run.withSuccessHandler(function(r){((r&&r.data)||[]).forEach(p=>{if(names.indexOf(p.nama)===-1)names.push(p.nama);});finish();}).withFailureHandler(finish).getPetugasTersediaHariIni(null);
   }
-
-  function selectStar(val) {
-    selectedRating = val;
-    document.getElementById('starLabel').textContent = STAR_LABELS[val];
-    document.querySelectorAll('#starsRow .star').forEach(function(s) {
-      s.classList.toggle('active', parseInt(s.dataset.val) <= val);
-    });
+  function selectStar(v){selectedRating=v; document.getElementById('starLabel').textContent=STAR_LABELS[v];
+    document.querySelectorAll('#starsRow .star').forEach(s=>s.classList.toggle('active',parseInt(s.dataset.val)<=v));}
+  function submitVisitorRating(){
+    if(!selectedRating){alert('Pilih bintang terlebih dahulu.');return;}
+    const btn=document.getElementById('ratingSubmitBtn'); btn.disabled=true; btn.textContent='Menyimpan…';
+    const reset=function(){btn.disabled=false;btn.textContent='Kirim penilaian';};
+    const sel=document.getElementById('ratingPetugasSelect');
+    google.script.run.withSuccessHandler(function(r){ if(r.ok) fetchTicket(); else {alert(r.error||'Gagal menyimpan penilaian.');reset();} })
+      .withFailureHandler(function(er){alert('Error: '+er.message);reset();})
+      .submitRatingWithPetugas(ENTRY_ID,selectedRating,document.getElementById('ratingComment').value.trim(),sel?sel.value:'');
   }
-
-  function submitVisitorRating() {
-    if (selectedRating === 0) { alert('Silakan pilih bintang terlebih dahulu.'); return; }
-    const comment = document.getElementById('ratingComment').value.trim();
-    const petugasSel = document.getElementById('ratingPetugasSelect');
-    const petugasDinilai = petugasSel ? petugasSel.value : '';
-    const btn = document.getElementById('ratingSubmitBtn');
-    btn.disabled = true;
-    btn.textContent = 'Menyimpan...';
-    google.script.run
-      .withSuccessHandler(function(res) {
-        if (res.ok) { fetchTicket(); }
-        else { alert(res.error || 'Gagal menyimpan penilaian.'); btn.disabled = false; btn.textContent = 'Kirim Penilaian'; }
-      })
-      .withFailureHandler(function(err) {
-        alert('Error: ' + err.message); btn.disabled = false; btn.textContent = 'Kirim Penilaian';
-      })
-      .submitRatingWithPetugas(ENTRY_ID, selectedRating, comment, petugasDinilai);
+  function fetchTicket(){
+    if(!ENTRY_ID){renderTicket({ok:false,error:'Tautan tiket tidak valid.'});return;}
+    google.script.run.withSuccessHandler(renderTicket).withFailureHandler(function(er){renderTicket({ok:false,error:er.message});}).getTicketLive(ENTRY_ID);
   }
-
-  function fetchTicket() {
-    if (!ENTRY_ID) {
-      renderTicket({ ok: false, error: 'Tautan tiket tidak valid.' });
-      return;
-    }
-    google.script.run
-      .withSuccessHandler(renderTicket)
-      .withFailureHandler(function(err) { renderTicket({ ok: false, error: err.message }); })
-      .getTicketLive(ENTRY_ID);
-  }
-
-  loadKantorInfo();
-  fetchTicket();
-  setInterval(function() {
-    if (lastStatus === 'DONE' || lastStatus === 'CANCELLED') return; // sudah final, tak perlu polling terus
-    fetchTicket();
-  }, 5000);
+  loadKantorInfo(); fetchTicket();
+  setInterval(function(){ if(lastStatus==='DONE'||lastStatus==='CANCELLED')return; fetchTicket(); },5000);
 </script>
 </body>
 </html>
